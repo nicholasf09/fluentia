@@ -1,82 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class FeedbackPage extends StatelessWidget {
-  const FeedbackPage({super.key});
+class FeedbackPage extends StatefulWidget {
+  final String userId;
+
+  const FeedbackPage({super.key, required this.userId});
+
+  @override
+  State<FeedbackPage> createState() => _FeedbackPageState();
+}
+
+class _FeedbackPageState extends State<FeedbackPage> {
+  bool _isLoading = true;
+  Map<String, dynamic>? feedbackData;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFeedback();
+  }
+
+  Future<void> _fetchFeedback() async {
+    try {
+      final url = Uri.parse("http://127.0.0.1:8000/feedback/");
+      final res = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({"user_id": widget.userId}),
+      );
+
+      if (res.statusCode == 200) {
+        setState(() {
+          feedbackData = json.decode(res.body);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = "Error: ${res.statusCode}";
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = "Error: $e";
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Learning Feedback"),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Words Learned
-            const Text(
-              "Words Learned:",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: const [
-                Chip(label: Text("休み")),
-                Chip(label: Text("理由")),
-                Chip(label: Text("進捗")),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Keigo Feedback
-            const Text(
-              "Keigo Feedback:",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Good job using polite expressions like 「〜たいです」.\n"
-              "Try to use more 丁寧語 when speaking to a boss.",
-              style: TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const SizedBox(height: 24),
-
-            // Suggestions
-            const Text(
-              "Suggestions:",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "・Try longer sentences\n"
-              "・Use more connecting words (それで, しかし)\n"
-              "・Practice listening to keigo patterns",
-              style: TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const Spacer(),
-
-            // Back button
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+      appBar: AppBar(title: const Text("Feedback Analysis")),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+              ? Center(child: Text(error!))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: feedbackData?['items']?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final item = feedbackData!['items'][index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['title'] ?? "Feedback ${index + 1}",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(item['content'] ?? "-"),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
-                child: const Text("Back to Home"),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

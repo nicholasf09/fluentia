@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../widgets/chat_bubble.dart';
+import './feedback_page.dart';
 
 class ConversationPage extends StatefulWidget {
   final String persona;
@@ -13,13 +16,13 @@ class ConversationPage extends StatefulWidget {
 
 class _ConversationPageState extends State<ConversationPage> {
   final List<Map<String, dynamic>> _messages = [
-    {"text": "こんにちは！今日はどうしましたか？こんにちは！今日はどうしましたか？", "isUser": false},
-    {"text": "すみません、休みをいただきたいです。", "isUser": true},
+    {"text": "こんにちは！今日はどうしましたか？", "isUser": false},
   ];
 
   final TextEditingController _controller = TextEditingController();
-  bool _isTyping = false; // untuk toggle mic <-> keyboard
-  bool _isRecording = false; // dummy state rekaman
+  bool _isTyping = false;
+  bool _isRecording = false;
+  bool _isSending = false; // loading state ketika menunggu LLM
 
   String _getPersonaAvatar(String persona) {
     switch (persona.toLowerCase()) {
@@ -54,16 +57,52 @@ class _ConversationPageState extends State<ConversationPage> {
     return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
 
-  void _sendMessage() {
-    if (_controller.text.trim().isEmpty) return;
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
     setState(() {
-      _messages.add({"text": _controller.text.trim(), "isUser": true});
+      _messages.add({"text": text, "isUser": true});
       _controller.clear();
       _isTyping = false;
-      // Dummy reply
-      _messages.add({"text": "わかりました。詳しく教えてください。", "isUser": false});
+      _isSending = true;
     });
+
+    final avatarPath = _getPersonaAvatar(widget.persona);
+
+    try {
+      final url = Uri.parse("http://127.0.0.1:8000/chat/");
+      final res = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "prompt": text,
+          "user_id": "nicholas123", // <-- user_id ditambahkan
+        }),
+      );
+
+      String reply = "";
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        reply = data["response"] ?? "No response";
+      } else {
+        reply = "Error: ${res.statusCode}";
+      }
+
+      setState(() {
+        _messages.add({"text": reply, "isUser": false});
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({"text": "Error: $e", "isUser": false});
+      });
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
   }
+
 
   @override
   void dispose() {
@@ -77,7 +116,6 @@ class _ConversationPageState extends State<ConversationPage> {
     final personaName = _getPersonaName(widget.persona);
 
     return Scaffold(
-      // Custom AppBar: white background + shadow (Container)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(90),
         child: SafeArea(
@@ -93,17 +131,13 @@ class _ConversationPageState extends State<ConversationPage> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
+            padding: const EdgeInsets.all(8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Back button
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-
-                // Avatar
                 if (avatarPath.isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -129,10 +163,7 @@ class _ConversationPageState extends State<ConversationPage> {
                       ),
                     ),
                   ),
-
                 const SizedBox(width: 12),
-
-                // Name + topic
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,10 +172,7 @@ class _ConversationPageState extends State<ConversationPage> {
                       Text(
                         personaName,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -158,12 +186,9 @@ class _ConversationPageState extends State<ConversationPage> {
                     ],
                   ),
                 ),
-
-                // (Optional) settings / more button
                 IconButton(
                   icon: const Icon(Icons.more_vert, color: Colors.black),
                   onPressed: () {
-                    // placeholder action
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("More tapped")),
                     );
@@ -174,7 +199,6 @@ class _ConversationPageState extends State<ConversationPage> {
           ),
         ),
       ),
-
       body: Column(
         children: [
           Expanded(
@@ -192,61 +216,138 @@ class _ConversationPageState extends State<ConversationPage> {
               },
             ),
           ),
-
-          // Input area
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: Row(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: "Type your reply...",
-                      border: InputBorder.none,
-                    ),
-                    onChanged: (v) {
-                      setState(() {
-                        _isTyping = v.trim().isNotEmpty;
-                      });
-                    },
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isTyping ? Icons.send : (_isRecording ? Icons.mic_none : Icons.mic),
-                    color: _isTyping ? Colors.blue : Colors.red,
-                  ),
-                  tooltip: _isTyping ? "Send" : (_isRecording ? "Stop Recording" : "Hold to Talk"),
-                  onPressed: () {
-                    if (_isTyping) {
-                      _sendMessage();
-                    } else {
-                      setState(() {
-                        _isRecording = !_isRecording;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(_isRecording ? "🎤 Recording..." : "Recording stopped"),
+                Stack(
+                  alignment: Alignment.centerRight,
+                  children: [
+                    // Input field with analyze & mic button
+                    Row(
+                      children: [
+                        // Analyze button (sekarang di kiri)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (!mounted) return;
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => FeedbackPage(
+                                    userId: "nicholas123",
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: const Icon(Icons.analytics, color: Colors.white),
+                            ),
+                          ),
                         ),
-                      );
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: Icon(_isTyping ? Icons.keyboard : Icons.mic, color: Colors.black),
-                  tooltip: _isTyping ? "Switch to keyboard" : "Switch to mic",
-                  onPressed: () {
-                    setState(() {
-                      _isTyping = !_isTyping;
-                      _isRecording = false;
-                    });
-                  },
+                        // Input field
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _controller,
+                                    decoration: const InputDecoration(
+                                      hintText: "Type your message...",
+                                      border: InputBorder.none,
+                                    ),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _isTyping = v.trim().isNotEmpty;
+                                      });
+                                    },
+                                    onSubmitted: (_) => _sendMessage(),
+                                  ),
+                                ),
+                                // Send button SELALU terlihat, tanpa background
+                                IconButton(
+                                  icon: const Icon(Icons.send, color: Color(0xFF4F8FFD)),
+                                  onPressed: _isSending ? null : _sendMessage,
+                                  tooltip: "Send",
+                                ),
+                                if (_isSending)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 8, right: 8),
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48), // space for mic button (kanan)
+                      ],
+                    ),
+                    // Mic button keluar background putih, SEKARANG di kanan
+                    if (!_isTyping && !_isSending)
+                      Positioned(
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isRecording = !_isRecording;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(_isRecording
+                                    ? "🎤 Recording..."
+                                    : "Recording stopped"),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0x334F8FFD),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              _isRecording ? Icons.mic : Icons.mic_none,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
