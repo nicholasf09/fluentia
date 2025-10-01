@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ChatBubble extends StatefulWidget {
   final String text;
@@ -17,7 +19,46 @@ class ChatBubble extends StatefulWidget {
 }
 
 class _ChatBubbleState extends State<ChatBubble> {
-  bool _showTranslation = false;
+  String? _translation;
+  bool _isLoading = false;
+
+  Future<void> _translateText() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/translate"), // ganti sesuai servermu
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "text": widget.text,
+          "target_lang": "id", // bisa diganti "en", "id", dsb
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _translation = data["translation"];
+        });
+      } else {
+        setState(() {
+          _translation = "⚠️ Failed to translate";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _translation = "⚠️ Error: $e";
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +88,7 @@ class _ChatBubbleState extends State<ChatBubble> {
           Container(
             margin: const EdgeInsets.only(top: 6, bottom: 20),
             child: Stack(
-              clipBehavior: Clip.none, // biar tombol bisa keluar
+              clipBehavior: Clip.none,
               children: [
                 // Bubble utama
                 Container(
@@ -72,16 +113,16 @@ class _ChatBubbleState extends State<ChatBubble> {
                         widget.text,
                         style: const TextStyle(fontSize: 16),
                       ),
-                      if (_showTranslation) ...[
+                      if (_translation != null) ...[
                         const SizedBox(height: 2),
                         const Divider(
                           color: Colors.black26,
                           thickness: 0.5,
                           height: 16,
                         ),
-                        const Text(
-                          "I would like to take a day off.",
-                          style: TextStyle(
+                        Text(
+                          _translation!,
+                          style: const TextStyle(
                             fontSize: 13,
                             fontStyle: FontStyle.italic,
                             color: Colors.black87,
@@ -92,20 +133,18 @@ class _ChatBubbleState extends State<ChatBubble> {
                   ),
                 ),
 
-                // Tombol kecil di pojok kanan bawah (overview keluar bubble)
+                // Tombol kecil di pojok kanan bawah
                 if (!widget.isUser)
                   Positioned(
-                    bottom: -12, // keluar dari bubble
+                    bottom: -12,
                     right: 16,
                     child: Row(
                       children: [
                         _buildMiniCircleButton(
-                          icon: Icons.translate,
-                          onTap: () {
-                            setState(() {
-                              _showTranslation = !_showTranslation;
-                            });
-                          },
+                          icon: _isLoading
+                              ? Icons.hourglass_top
+                              : Icons.translate,
+                          onTap: _translateText,
                         ),
                         const SizedBox(width: 6),
                         _buildMiniCircleButton(
@@ -113,7 +152,8 @@ class _ChatBubbleState extends State<ChatBubble> {
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text("🔊 Speaker tapped (dummy)")),
+                                content: Text("🔊 Speaker tapped (dummy)"),
+                              ),
                             );
                           },
                         ),

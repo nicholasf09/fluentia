@@ -7,28 +7,42 @@ import './feedback_page.dart';
 class ConversationPage extends StatefulWidget {
   final String persona;
   final String topic;
+  final String firstMessage;
+  final String userId;
 
-  const ConversationPage({super.key, required this.persona, required this.topic});
+  const ConversationPage({
+    super.key,
+    required this.persona,
+    required this.topic,
+    required this.firstMessage,
+    required this.userId,
+  });
 
   @override
   State<ConversationPage> createState() => _ConversationPageState();
 }
 
 class _ConversationPageState extends State<ConversationPage> {
-  final List<Map<String, dynamic>> _messages = [
-    {"text": "こんにちは！今日はどうしましたか？", "isUser": false},
-  ];
-
+  late List<Map<String, dynamic>> _messages;
   final TextEditingController _controller = TextEditingController();
   bool _isTyping = false;
   bool _isRecording = false;
   bool _isSending = false; // loading state ketika menunggu LLM
 
+  @override
+  void initState() {
+    super.initState();
+    // Mulai percakapan dengan firstMessage dari backend
+    _messages = [
+      {"text": widget.firstMessage, "isUser": false},
+    ];
+  }
+
   String _getPersonaAvatar(String persona) {
     switch (persona.toLowerCase()) {
-      case "boss":
+      case "manager":
         return "assets/images/boss.png";
-      case "shop clerk":
+      case "shop staff":
         return "assets/images/cashier.png";
       case "friend":
         return "assets/images/friend.png";
@@ -39,9 +53,9 @@ class _ConversationPageState extends State<ConversationPage> {
 
   String _getPersonaName(String persona) {
     switch (persona.toLowerCase()) {
-      case "boss":
+      case "manager":
         return "Tanaka";
-      case "shop clerk":
+      case "shop staff":
         return "Honda";
       case "friend":
         return "Akira";
@@ -68,16 +82,16 @@ class _ConversationPageState extends State<ConversationPage> {
       _isSending = true;
     });
 
-    final avatarPath = _getPersonaAvatar(widget.persona);
-
     try {
-      final url = Uri.parse("http://127.0.0.1:8000/chat/");
+      final url = Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/chat/"); 
       final res = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           "prompt": text,
-          "user_id": "nicholas123", // <-- user_id ditambahkan
+          "user_id": widget.userId,
+          "persona": widget.persona,
+          "topic": widget.topic,
         }),
       );
 
@@ -102,7 +116,6 @@ class _ConversationPageState extends State<ConversationPage> {
       });
     }
   }
-
 
   @override
   void dispose() {
@@ -131,13 +144,14 @@ class _ConversationPageState extends State<ConversationPage> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.only(left: 16, right: 8, top: 1, bottom: 1),
             child: Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
+                const SizedBox(width: 8),
                 if (avatarPath.isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -186,13 +200,35 @@ class _ConversationPageState extends State<ConversationPage> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert, color: Colors.black),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("More tapped")),
+                // Ganti tombol more dengan tombol feedback/analisa
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FeedbackPage(
+                          userId: widget.userId,
+                          persona: widget.persona,
+                          topic: widget.topic,
+                          avatarPath: avatarPath,
+                          personaName: personaName,
+                        ),
+                      ),
                     );
                   },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: const Icon(Icons.assignment_turned_in_rounded, color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -225,45 +261,14 @@ class _ConversationPageState extends State<ConversationPage> {
                 Stack(
                   alignment: Alignment.centerRight,
                   children: [
-                    // Input field with analyze & mic button
                     Row(
                       children: [
-                        // Analyze button (sekarang di kiri)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              if (!mounted) return;
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => FeedbackPage(
-                                    userId: "nicholas123",
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: const Icon(Icons.analytics, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        // Input field
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(56),
                               border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: Row(
@@ -283,70 +288,81 @@ class _ConversationPageState extends State<ConversationPage> {
                                     onSubmitted: (_) => _sendMessage(),
                                   ),
                                 ),
-                                // Send button SELALU terlihat, tanpa background
-                                IconButton(
-                                  icon: const Icon(Icons.send, color: Color(0xFF4F8FFD)),
-                                  onPressed: _isSending ? null : _sendMessage,
-                                  tooltip: "Send",
-                                ),
-                                if (_isSending)
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 8, right: 8),
-                                    child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                  ),
+                                // Hapus loading dari dalam input
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 48), // space for mic button (kanan)
+                        const SizedBox(width: 48),
                       ],
                     ),
-                    // Mic button keluar background putih, SEKARANG di kanan
-                    if (!_isTyping && !_isSending)
-                      Positioned(
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isRecording = !_isRecording;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(_isRecording
-                                    ? "🎤 Recording..."
-                                    : "Recording stopped"),
+                    // Mic/send button/loading di kanan luar input
+                    Positioned(
+                      right: 0,
+                      child: _isSending
+                          ? Container(
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0x334F8FFD),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                              child: const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0x334F8FFD),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
+                            )
+                          : GestureDetector(
+                              onTap: _isTyping
+                                  ? _sendMessage
+                                  : () {
+                                      setState(() {
+                                        _isRecording = !_isRecording;
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(_isRecording
+                                              ? "🎤 Recording..."
+                                              : "Recording stopped"),
+                                        ),
+                                      );
+                                    },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color(0x334F8FFD),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                                child: Icon(
+                                  _isTyping
+                                      ? Icons.send
+                                      : (_isRecording ? Icons.mic : Icons.mic_none),
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                            child: Icon(
-                              _isRecording ? Icons.mic : Icons.mic_none,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
+                    ),
                   ],
                 ),
               ],

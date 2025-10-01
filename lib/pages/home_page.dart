@@ -137,7 +137,7 @@ class HomePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => TopicSelectionPage("Boss"),
+                          builder: (_) => TopicSelectionPage("Manager"),
                         ),
                       );
                     },
@@ -151,7 +151,7 @@ class HomePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => TopicSelectionPage("Shop Clerk"),
+                          builder: (_) => TopicSelectionPage("Shop Staff"),
                         ),
                       );
                     },
