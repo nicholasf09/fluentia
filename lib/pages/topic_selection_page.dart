@@ -120,7 +120,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                           widget.personaName,
                           style: const TextStyle(
                             fontSize: 24,
-                            fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),

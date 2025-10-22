@@ -44,7 +44,6 @@ class TopicCard extends StatelessWidget {
                 jpTitle,
                 style: const TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
               Container(

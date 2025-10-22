@@ -18,38 +18,8 @@ class PersonaCard extends StatelessWidget {
     required this.onTap,
   });
 
-  // === Warna label formality ===
-  Color _getFormalityColor(String level) {
-    switch (level.toLowerCase()) {
-      case "casual":
-        return Colors.green;
-      case "polite":
-        return Colors.amber;
-      case "formal":
-        return Colors.redAccent;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // === Ubah label formality jadi versi bahasa Indonesia ===
-  String _getFormalityLabel(String level) {
-    switch (level.toLowerCase()) {
-      case "casual":
-        return "Kasual";
-      case "polite":
-        return "Sopan";
-      case "formal":
-        return "Formal";
-      default:
-        return "Tidak Diketahui";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final formalityColor = _getFormalityColor(levelFormality);
-    final formalityLabel = _getFormalityLabel(levelFormality);
 
     return GestureDetector(
       onTap: onTap,
@@ -88,61 +58,82 @@ class PersonaCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nama
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const SizedBox(height: 3),
-
-                  // Role + Level Formalitas
+                  // === Nama + Label Formalitas ===
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        role,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.black54,
+                      Flexible(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
+
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                          color: formalityColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF4F8FFD), // biru tua
+                            width: 1.2,
+                          ),
+                          borderRadius: BorderRadius.circular(25), // semi-lingkaran
                         ),
                         child: Text(
-                          formalityLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: formalityColor,
-                            fontWeight: FontWeight.w600,
+                          role,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w300,
+                              color: Color(0xFF4F8FFD),
+                              letterSpacing: 0.1,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 5),
-
-                  // Deskripsi
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                      height: 1.3,
+                      const SizedBox(width: 6),
+                      // === Teks formalitas dengan gradient + outline ===
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xFF4F8FFD), // biru tua
+                            width: 1.2,
+                          ),
+                          borderRadius: BorderRadius.circular(25), // semi-lingkaran
+                        ),
+                        child: Text(
+                          levelFormality,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w300,
+                              color: Color(0xFF4F8FFD),
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+
+                  const SizedBox(height: 6),
+
+                  // === Deskripsi ===
+                  Padding(
+                    padding: const EdgeInsets.only(right: 30),
+                    child: Text(
+                      description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        height: 1.3,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
