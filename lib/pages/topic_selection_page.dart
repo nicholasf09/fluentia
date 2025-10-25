@@ -3,6 +3,10 @@ import '../services/api_service.dart';
 import './conversation_page.dart';
 import '../widgets/topic_card.dart';
 
+// ✅ Global key untuk menampilkan snackbar dari mana pun tanpa error context
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class TopicSelectionPage extends StatefulWidget {
   final String personaName;
   final String imagePath;
@@ -14,7 +18,7 @@ class TopicSelectionPage extends StatefulWidget {
   });
 
   @override
-  _TopicSelectionPageState createState() => _TopicSelectionPageState();
+  State<TopicSelectionPage> createState() => _TopicSelectionPageState();
 }
 
 class _TopicSelectionPageState extends State<TopicSelectionPage> {
@@ -27,31 +31,42 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     _fetchTopics();
   }
 
-  // === Ambil data topik dari API berdasarkan persona ===
+  /// ✅ Tampilkan snackbar lewat global messenger (tidak pakai context)
+  void _safeShowSnackBar(String message) {
+    rootScaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  /// === Ambil daftar topik dari API berdasarkan persona ===
   Future<void> _fetchTopics() async {
     setState(() => _isLoading = true);
     try {
       final topics = await ApiService.getTopicsByPersona(widget.personaName);
+      if (!mounted) return;
       setState(() => _topics = topics);
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Gagal memuat topik: $e")));
+      _safeShowSnackBar("Gagal memuat topik: $e");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // === Fetch pesan pembuka dari backend (LLM) ===
-  Future<String> _fetchFirstMessage(
-      String persona, String topic, String userId) async {
+  /// === Ambil pesan pertama dari endpoint /chat ===
+  Future<String> _fetchFirstMessage(String topicId, String userId) async {
+    if (topicId.isEmpty || userId.isEmpty) {
+      throw Exception("TopicId atau UserId tidak boleh kosong");
+    }
+
     final url = Uri.parse("${ApiService.baseUrl}/chat/");
     final body = {
       "prompt": "",
       "user_id": userId,
-      "persona": persona,
-      "topic": topic,
+      "persona": widget.personaName,
+      "topic_id": topicId,
     };
 
+    debugPrint("🚀 Sending to /chat/: $body");
     final response = await ApiService.postJson(url, body);
     return response["response"] ?? "エラーが発生しました。";
   }
@@ -71,12 +86,13 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = widget.imagePath;
-    final userId = "user123";
+    const userId = "user123";
 
     return Stack(
       children: [
         Scaffold(
+          // ✅ gunakan global messenger agar tidak error
+          key: rootScaffoldMessengerKey,
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(90),
             child: Container(
@@ -91,8 +107,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                   ),
                 ],
               ),
-              padding:
-                  const EdgeInsets.only(left: 16, right: 8, top: 1, bottom: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -104,7 +119,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
-                      imagePath,
+                      widget.imagePath,
                       width: 55,
                       height: 55,
                       fit: BoxFit.cover,
@@ -137,9 +152,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                   IconButton(
                     icon: const Icon(Icons.settings, color: Colors.black),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Settings tapped")),
-                      );
+                      _safeShowSnackBar("Settings tapped");
                     },
                     tooltip: 'Settings',
                   ),
@@ -147,72 +160,86 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
               ),
             ),
           ),
+
+          /// === BODY ===
           body: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _topics.isEmpty
-                  ? const Center(child: Text("Tidak ada topik tersedia."))
-                  : Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ListView.builder(
-                        itemCount: _topics.length,
-                        itemBuilder: (context, index) {
-                          final topic = _topics[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: TopicCard(
-                              jpTitle: topic["jp_title"] ?? "タイトルなし",
-                              enTitle: topic["en_title"] ?? "No Title",
-                              description:
-                                  topic["description"] ?? "No description",
-                              level: topic["level"] ?? "Easy",
-                              levelColor: _getLevelColor(
-                                  topic["level"] ?? "Easy"),
-                              onTap: () async {
-                                setState(() => _isLoading = true);
-                                try {
-                                  final firstMessage = await _fetchFirstMessage(
-                                    widget.personaName,
-                                    topic["en_title"],
-                                    userId,
-                                  );
-                                  if (!mounted) return;
-                                  setState(() => _isLoading = false);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ConversationPage(
-                                        persona: widget.personaName,
-                                        topic: topic["en_title"],
-                                        firstMessage: firstMessage,
-                                        userId: userId,
-                                      ),
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _topics.length,
+                    itemBuilder: (context, index) {
+                      final topic = _topics[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: TopicCard(
+                          jpTitle: topic["jp_title"] ?? "タイトルなし",
+                          enTitle: topic["en_title"] ?? "No Title",
+                          description:
+                              topic["description"] ?? "No description",
+                          level: topic["level"] ?? "Easy",
+                          levelColor:
+                              _getLevelColor(topic["level"] ?? "Easy"),
+                          onTap: () async {
+                            if (!mounted) return;
+                            debugPrint("🟢 Start conversation tapped for topic ${topic["en_title"]}");
+                            setState(() => _isLoading = true);
+
+                            try {
+                              final firstMessage = await _fetchFirstMessage(
+                                topic["topic_id"]?.toString() ?? "",
+                                userId,
+                              );
+
+                              debugPrint("✅ First message: $firstMessage");
+
+                              if (!mounted) return;
+                              setState(() => _isLoading = false);
+
+                              // ✅ Gunakan context global dari rootScaffoldMessengerKey agar tidak bisa "deactivated"
+                              final globalContext = rootScaffoldMessengerKey.currentContext;
+
+                              if (globalContext != null) {
+                                debugPrint("🚀 Navigating to ConversationPage...");
+                                await Navigator.of(globalContext).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ConversationPage(
+                                      personaName: widget.personaName,
+                                      topic: topic["en_title"] ?? "No Title",
+                                      topicId: topic["topic_id"]?.toString() ?? "",
+                                      firstMessage: firstMessage,
+                                      userId: userId,
+                                      imagePath: widget.imagePath,
                                     ),
-                                  );
-                                } catch (e) {
-                                  setState(() => _isLoading = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content:
-                                          Text("Gagal memuat percakapan: $e"),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                                  ),
+                                );
+                              } else {
+                                debugPrint("⚠️ globalContext is null, cannot navigate");
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                                rootScaffoldMessengerKey.currentState?.showSnackBar(
+                                  SnackBar(content: Text("Gagal memuat percakapan: $e")),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
         ),
+
+        /// === LOADING OVERLAY ===
         if (_isLoading)
           Positioned.fill(
-            child: AbsorbPointer(
-              absorbing: true,
-              child: Container(
-                color: Colors.black.withOpacity(0.2),
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
+            child: Container(
+              color: Colors.black.withOpacity(0.25),
+              child: const Center(
+                child: CircularProgressIndicator(),
               ),
             ),
           ),

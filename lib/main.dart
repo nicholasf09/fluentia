@@ -1,7 +1,16 @@
 import 'package:fluentia/pages/home_page.dart';
+import 'package:fluentia/pages/topic_selection_page.dart'; // ✅ tambahkan ini
 import 'package:flutter/material.dart';
 
 void main() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+    debugPrint("🔥 Flutter caught error: ${details.exceptionAsString()}");
+    if (details.stack != null) {
+      debugPrintStack(stackTrace: details.stack);
+    }
+  };
+
   runApp(const FluentiaApp());
 }
 
@@ -29,6 +38,10 @@ class _FluentiaAppState extends State<FluentiaApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Fluentia',
+
+      // ✅ Tambahkan ini agar semua _safeShowSnackBar() di seluruh app aman
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,

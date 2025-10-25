@@ -23,30 +23,29 @@ class _ChatBubbleState extends State<ChatBubble> {
   bool _isLoading = false;
 
   Future<void> _translateText() async {
-    if (_isLoading) return;
+    // Hindari klik ganda atau teks kosong
+    if (_isLoading || widget.text.trim().isEmpty) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final response = await http.post(
-        Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/translate"), // ganti sesuai servermu
+        Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/translate"),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           "text": widget.text,
-          "target_lang": "id", // bisa diganti "en", "id", dsb
+          "target_lang": "id", // bisa diubah sesuai kebutuhan
         }),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          _translation = data["translation"];
+          _translation = data["translation"] ?? "⚠️ Terjemahan tidak tersedia.";
         });
       } else {
         setState(() {
-          _translation = "⚠️ Failed to translate";
+          _translation = "⚠️ Gagal menerjemahkan (Status: ${response.statusCode})";
         });
       }
     } catch (e) {
@@ -55,13 +54,15 @@ class _ChatBubbleState extends State<ChatBubble> {
       });
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Pastikan text tidak null atau kosong
+    final safeText =
+        (widget.text.trim().isEmpty ? "（メッセージなし）" : widget.text).toString();
+
     final bubbleColor =
         widget.isUser ? Colors.blue.shade100 : Colors.grey.shade200;
 
@@ -77,10 +78,12 @@ class _ChatBubbleState extends State<ChatBubble> {
               child: CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.grey.shade400,
-                backgroundImage: widget.avatarPath != null
+                backgroundImage: widget.avatarPath != null &&
+                        widget.avatarPath!.isNotEmpty
                     ? AssetImage(widget.avatarPath!)
                     : null,
-                child: widget.avatarPath == null
+                child: (widget.avatarPath == null ||
+                        widget.avatarPath!.isEmpty)
                     ? const Icon(Icons.person, color: Colors.white)
                     : null,
               ),
@@ -93,7 +96,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                 // Bubble utama
                 Container(
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.6,
+                    maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -110,11 +113,12 @@ class _ChatBubbleState extends State<ChatBubble> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.text,
+                        safeText,
                         style: const TextStyle(fontSize: 16),
+                        softWrap: true,
                       ),
                       if (_translation != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         const Divider(
                           color: Colors.black26,
                           thickness: 0.5,
@@ -128,12 +132,12 @@ class _ChatBubbleState extends State<ChatBubble> {
                             color: Colors.black87,
                           ),
                         ),
-                      ]
+                      ],
                     ],
                   ),
                 ),
 
-                // Tombol kecil di pojok kanan bawah
+                // Tombol kecil di pojok kanan bawah (translate + speaker)
                 if (!widget.isUser)
                   Positioned(
                     bottom: -12,
@@ -152,7 +156,9 @@ class _ChatBubbleState extends State<ChatBubble> {
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("🔊 Speaker tapped (dummy)"),
+                                content:
+                                    Text("🔊 Speaker tapped (fitur belum aktif)"),
+                                duration: Duration(seconds: 1),
                               ),
                             );
                           },
@@ -188,7 +194,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                 color: Colors.black.withOpacity(0.15),
                 blurRadius: 3,
                 offset: const Offset(1, 2),
-              )
+              ),
             ],
           ),
           child: Icon(icon, size: 16, color: Colors.black87),
