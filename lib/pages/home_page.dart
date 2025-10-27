@@ -95,13 +95,11 @@ class _HomePageState extends State<HomePage> {
                           description: p['description'] ?? '',
                           imagePath: p['image_path'],
                           onTap: () {
-                            Navigator.push(
+                            _fadeSlideNavigate(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => TopicSelectionPage(
-                                  personaName: p['name'],
-                                  imagePath: p['image_path'],
-                                ),
+                              TopicSelectionPage(
+                                personaName: p['name'],
+                                imagePath: p['image_path'],
                               ),
                             );
                           },
@@ -111,20 +109,13 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 15),
 
-                  // === Feedback History Button (paling bawah) ===
+                  // === Feedback History Button ===
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
+                        _fadeSlideNavigate(
                           context,
-                          PageRouteBuilder(
-                            pageBuilder: (_, __, ___) =>
-                                const FeedbackHistoryPage(userId: 1), // TODO: ubah userId dinamis
-                            transitionsBuilder: (_, anim, __, child) =>
-                                FadeTransition(opacity: anim, child: child),
-                            transitionDuration:
-                                const Duration(milliseconds: 400),
-                          ),
+                          const FeedbackHistoryPage(userId: 1), // TODO: ubah userId dinamis
                         );
                       },
                       child: Container(
@@ -163,6 +154,38 @@ class _HomePageState extends State<HomePage> {
           // === Custom App Bar ===
           _buildAppBar(context),
         ],
+      ),
+    );
+  }
+
+  // ======================================================
+  // 🌫️ Helper untuk Fade + Slide Navigation
+  // ======================================================
+  void _fadeSlideNavigate(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (_, __, ___) => page,
+        transitionsBuilder: (_, animation, __, child) {
+          final fade = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          );
+
+          final slide = Tween<Offset>(
+            begin: const Offset(0.5, 0.0), // dari kanan (offset kecil)
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          ));
+
+          return FadeTransition(
+            opacity: fade,
+            child: SlideTransition(position: slide, child: child),
+          );
+        },
       ),
     );
   }
@@ -215,10 +238,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.settings, color: Colors.black),
             tooltip: 'Settings',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
+              _fadeSlideNavigate(context, const SettingsPage());
             },
           ),
         ],

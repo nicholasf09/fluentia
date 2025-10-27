@@ -125,4 +125,16 @@ class ApiService {
       throw Exception('Gagal mengambil feedback user ($userId)');
     }
   }
+
+  static Future<Map<String, dynamic>> getFeedbackById(String feedbackId) async {
+    final url = Uri.parse("$baseUrl/feedback/detail/$feedbackId");
+
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception("Failed to load feedback detail");
+    }
+  }
+
 }

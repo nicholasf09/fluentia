@@ -31,7 +31,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     _fetchTopics();
   }
 
-  /// ✅ Tampilkan snackbar lewat global messenger (tidak pakai context)
+  /// ✅ Tampilkan snackbar lewat global messenger
   void _safeShowSnackBar(String message) {
     rootScaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(content: Text(message)),
@@ -84,6 +84,20 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     }
   }
 
+  // ======================================================
+  // 🌫️ Helper untuk Fade Navigation
+  // ======================================================
+  Future<void> _fadeNavigate(BuildContext context, Widget page) async {
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => page,
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const userId = "1";
@@ -91,7 +105,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     return Stack(
       children: [
         Scaffold(
-          // ✅ gunakan global messenger agar tidak error
           key: rootScaffoldMessengerKey,
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(90),
@@ -183,7 +196,8 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               _getLevelColor(topic["level"] ?? "Easy"),
                           onTap: () async {
                             if (!mounted) return;
-                            debugPrint("🟢 Start conversation tapped for topic ${topic["en_title"]}");
+                            debugPrint(
+                                "🟢 Start conversation tapped for topic ${topic["en_title"]}");
                             setState(() => _isLoading = true);
 
                             try {
@@ -197,31 +211,35 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               if (!mounted) return;
                               setState(() => _isLoading = false);
 
-                              // ✅ Gunakan context global dari rootScaffoldMessengerKey agar tidak bisa "deactivated"
-                              final globalContext = rootScaffoldMessengerKey.currentContext;
+                              final globalContext =
+                                  rootScaffoldMessengerKey.currentContext;
 
                               if (globalContext != null) {
-                                debugPrint("🚀 Navigating to ConversationPage...");
-                                await Navigator.of(globalContext).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ConversationPage(
-                                      personaName: widget.personaName,
-                                      topic: topic["en_title"] ?? "No Title",
-                                      topicId: topic["topic_id"]?.toString() ?? "",
-                                      firstMessage: firstMessage,
-                                      userId: userId,
-                                      imagePath: widget.imagePath,
-                                    ),
+                                debugPrint("🚀 Navigating with fade...");
+                                await _fadeNavigate(
+                                  globalContext,
+                                  ConversationPage(
+                                    personaName: widget.personaName,
+                                    topic: topic["en_title"] ?? "No Title",
+                                    topicId:
+                                        topic["topic_id"]?.toString() ?? "",
+                                    firstMessage: firstMessage,
+                                    userId: userId,
+                                    imagePath: widget.imagePath,
                                   ),
                                 );
                               } else {
-                                debugPrint("⚠️ globalContext is null, cannot navigate");
+                                debugPrint(
+                                    "⚠️ globalContext is null, cannot navigate");
                               }
                             } catch (e) {
                               if (mounted) {
                                 setState(() => _isLoading = false);
-                                rootScaffoldMessengerKey.currentState?.showSnackBar(
-                                  SnackBar(content: Text("Gagal memuat percakapan: $e")),
+                                rootScaffoldMessengerKey.currentState
+                                    ?.showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          "Gagal memuat percakapan: $e")),
                                 );
                               }
                             }

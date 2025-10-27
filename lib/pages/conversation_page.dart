@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../widgets/chat_bubble.dart';
-import '../services/api_service.dart'; // ✅ pakai ApiService
+import '../services/api_service.dart';
 import './feedback_page.dart';
 
 class ConversationPage extends StatefulWidget {
@@ -37,12 +37,10 @@ class _ConversationPageState extends State<ConversationPage> {
   void initState() {
     super.initState();
 
-    // Bersihkan tag <think> dari firstMessage
     final cleanFirst = widget.firstMessage
         .replaceAll(RegExp(r"<think>.*?</think>", dotAll: true), "")
         .trim();
 
-    // Pastikan tidak null/kosong
     _messages = [
       {
         "text": cleanFirst.isEmpty ? "（初回メッセージなし）" : cleanFirst,
@@ -70,7 +68,7 @@ class _ConversationPageState extends State<ConversationPage> {
     });
 
     try {
-      final url = Uri.parse("${ApiService.baseUrl}/chat/"); // ✅ gunakan ApiService
+      final url = Uri.parse("${ApiService.baseUrl}/chat/");
       final body = {
         "prompt": text,
         "user_id": widget.userId,
@@ -183,16 +181,44 @@ class _ConversationPageState extends State<ConversationPage> {
                     ],
                   ),
                 ),
+
+                // 🔹 Tombol Feedback dengan transisi animasi
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FeedbackPage(
+                      PageRouteBuilder(
+                        transitionDuration: const Duration(milliseconds: 450),
+                        pageBuilder:
+                            (context, animation, secondaryAnimation) =>
+                                FeedbackPage(
                           userId: widget.userId,
                           topic: widget.topic,
                           avatarPath: avatarPath,
                           personaName: personaName,
                         ),
+                        transitionsBuilder: (context, animation,
+                            secondaryAnimation, child) {
+                          final offsetAnimation = Tween<Offset>(
+                            begin: const Offset(0.1, 0.0), // geser dari kanan
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ));
+
+                          final fadeAnimation = CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOut,
+                          );
+
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(
+                              position: offsetAnimation,
+                              child: child,
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -219,6 +245,8 @@ class _ConversationPageState extends State<ConversationPage> {
           ),
         ),
       ),
+
+      // 🔹 Chat Area
       body: Column(
         children: [
           Expanded(
@@ -238,6 +266,8 @@ class _ConversationPageState extends State<ConversationPage> {
               },
             ),
           ),
+
+          // 🔹 Input Area
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
@@ -275,6 +305,8 @@ class _ConversationPageState extends State<ConversationPage> {
                     const SizedBox(width: 48),
                   ],
                 ),
+
+                // 🔹 Tombol kirim / mic
                 Positioned(
                   right: 0,
                   child: _isSending
