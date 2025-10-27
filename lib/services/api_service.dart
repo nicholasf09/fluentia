@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // ⚙️ base URL FastAPI lokal
-  static const String baseUrl = "http://127.0.0.1:8000"; 
-  // kalau kamu jalankan di Android Emulator: ganti jadi "http://10.0.2.2:8000"
-  // kalau di HP fisik: pakai IP lokal misalnya "http://192.168.1.5:8000"
+  // ⚙️ Base URL FastAPI lokal
+  static const String baseUrl = "http://127.0.0.1:8000";
+  // Android emulator: "http://10.0.2.2:8000"
+  // HP fisik: ganti sesuai IP laptop misalnya "http://192.168.1.5:8000"
 
-  // ==== GET semua persona ====
+  // =======================================================
+  // 🔹 PERSONA
+  // =======================================================
+
   static Future<List<dynamic>> getAllPersona() async {
     final response = await http.get(Uri.parse('$baseUrl/persona'));
     if (response.statusCode == 200) {
@@ -17,7 +20,6 @@ class ApiService {
     }
   }
 
-  // ==== POST tambah persona ====
   static Future<void> addPersona(Map<String, dynamic> data) async {
     final response = await http.post(
       Uri.parse('$baseUrl/persona'),
@@ -44,8 +46,10 @@ class ApiService {
     }
   }
 
+  // =======================================================
+  // 🔹 TOPIC
+  // =======================================================
 
-  // ==== 🆕 GET semua topik berdasarkan persona ====
   static Future<List<dynamic>> getTopicsByPersona(String personaName) async {
     final encodedPersona = Uri.encodeComponent(personaName);
     final response =
@@ -63,13 +67,62 @@ class ApiService {
     }
   }
 
-  // ==== (opsional) GET detail topik tertentu ====
   static Future<Map<String, dynamic>> getTopicDetail(int topicId) async {
     final response = await http.get(Uri.parse('$baseUrl/topics/$topicId'));
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
       throw Exception('Gagal memuat detail topik');
+    }
+  }
+
+  // =======================================================
+  // 🧠 FEEDBACK (baru)
+  // =======================================================
+
+  /// 🚀 Generate feedback dari GPU & langsung auto-save ke DB
+  static Future<Map<String, dynamic>> generateFeedback({
+    required String userId,
+    required String topicId,
+    String? persona,
+    String? topic,
+  }) async {
+    final url = Uri.parse('$baseUrl/feedback/generate/');
+    final body = json.encode({
+      "user_id": userId,
+      "topic_id": topicId,
+      "persona": persona ?? "",
+      "topic": topic ?? "",
+    });
+
+    print("📤 Sending feedback generation request to: $url");
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+
+    print("📡 Status: ${response.statusCode}");
+    print("📦 Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(
+          'Gagal generate feedback (${response.statusCode}): ${response.body}');
+    }
+  }
+
+  /// 📄 Ambil semua feedback berdasarkan user ID (riwayat)
+  static Future<List<dynamic>> getFeedbackByUser(String userId) async {
+    final url = Uri.parse('$baseUrl/feedback/$userId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      return decoded['items'] ?? [];
+    } else {
+      throw Exception('Gagal mengambil feedback user ($userId)');
     }
   }
 }

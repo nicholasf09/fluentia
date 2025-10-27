@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/api_service.dart';
+import './home_page.dart';
 
 class FeedbackPage extends StatefulWidget {
   final String userId;
@@ -8,6 +10,7 @@ class FeedbackPage extends StatefulWidget {
   final String? topic;
   final String? avatarPath;
   final String? personaName;
+  final String? topicId;
 
   const FeedbackPage({
     super.key,
@@ -16,6 +19,7 @@ class FeedbackPage extends StatefulWidget {
     this.topic,
     this.avatarPath,
     this.personaName,
+    this.topicId,
   });
 
   @override
@@ -25,49 +29,52 @@ class FeedbackPage extends StatefulWidget {
 class _FeedbackPageState extends State<FeedbackPage> {
   bool _isLoading = true;
   String? feedbackRaw;
+  double? score;
   String? error;
 
   @override
   void initState() {
     super.initState();
-    _fetchFeedback();
+    _generateFeedback();
   }
 
-  Future<void> _fetchFeedback() async {
+  // ====================================================
+  // 🚀 Generate feedback & auto-save ke database
+  // ====================================================
+  Future<void> _generateFeedback() async {
+    setState(() {
+      _isLoading = true;
+      error = null;
+    });
+
     try {
-      final url = Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/feedback/");
-      final res = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({"user_id": widget.userId}),
+      final result = await ApiService.generateFeedback(
+        userId: widget.userId,
+        topicId: widget.topicId ?? "1",
+        persona: widget.persona,
+        topic: widget.topic,
       );
 
-      if (res.statusCode == 200) {
-        setState(() {
-          final decoded = json.decode(res.body);
-          print("FEEDBACK RAW:\n${decoded['items'][0]['content']}");
-          if (decoded['items'] != null && decoded['items'].isNotEmpty) {
-            feedbackRaw = decoded['items'][0]['content'] ?? '';
-          } else {
-            feedbackRaw = '';
-          }
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          error = "Error: ${res.statusCode}";
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
       setState(() {
-        error = "Error: $e";
+        feedbackRaw = result["content"] ?? "";
+        score = (result["score"] is num)
+            ? result["score"].toDouble()
+            : 0.0;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("❌ [Feedback] Error: $e");
+      setState(() {
+        error = "Gagal memuat feedback: $e";
         _isLoading = false;
       });
     }
   }
 
-  // Bersihkan label seperti "Grammar Accuracy:" dari teks
+
+  // ====================================================
+  // 🔍 Parsing bagian-bagian dari feedback (###)
+  // ====================================================
   Map<String, String> _parseFeedback(String text) {
     String clean(String section) {
       return section.replaceAll(RegExp(r'^[A-Za-z\s&()–\-:]+:'), '').trim();
@@ -75,7 +82,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
     final parts = text.split('###');
     return {
-      'overall': parts.length > 0 ? clean(parts[0]) : '',
       'grammar': parts.length > 1 ? clean(parts[1]) : '',
       'vocab': parts.length > 2 ? clean(parts[2]) : '',
       'formality': parts.length > 3 ? clean(parts[3]) : '',
@@ -84,23 +90,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
     };
   }
 
-  // Ekstrak skor numerik dari teks
-  double _extractScore(String text) {
-    // Bersihkan whitespace dan newline dulu
-    final cleanText = text.replaceAll('\n', ' ').trim();
-    print("RAW SCORE TEXT: '$text'");
-    final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(cleanText);
-    if (match != null) {
-      final value = double.tryParse(match.group(0)!);
-      if (value != null) {
-        return value.clamp(0, 10);
-      }
-    }
-    return 0;
-  }
-
-
-  // Pesan motivasi sesuai skor
   String _scoreMessage(double score) {
     if (score <= 3) return "Masih perlu latihan, tetap semangat!";
     if (score <= 6) return "Kemajuan terlihat, terus asah kemampuanmu!";
@@ -108,6 +97,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
     return "Hebat! Kamu mendekati kefasihan alami!";
   }
 
+  // ====================================================
+  // 🧱 UI
+  // ====================================================
   @override
   Widget build(BuildContext context) {
     final avatarPath = widget.avatarPath ?? "assets/images/boss.png";
@@ -184,13 +176,19 @@ class _FeedbackPageState extends State<FeedbackPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : error != null
-              ? Center(child: Text(error!))
+              ? Center(
+                  child: Text(error!,
+                      style: const TextStyle(color: Colors.red)),
+                )
               : feedbackRaw == null || feedbackRaw!.isEmpty
                   ? const Center(child: Text("No feedback available."))
                   : _buildFeedbackContent(_parseFeedback(feedbackRaw!)),
     );
   }
 
+  // ====================================================
+  // 🧩 Konten Feedback
+  // ====================================================
   Widget _buildFeedbackContent(Map<String, String> parsed) {
     final sections = [
       {
@@ -223,7 +221,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       padding: const EdgeInsets.all(18),
       children: [
         const SizedBox(height: 10),
-        _buildScoreCircle(parsed['overall'] ?? ''),
+        _buildScoreCircle(),
         const SizedBox(height: 20),
         ...sections.map((s) => _buildFeedbackCard(
               s['title'] as String,
@@ -231,16 +229,47 @@ class _FeedbackPageState extends State<FeedbackPage> {
               s['icon'] as IconData,
               s['color'] as Color,
             )),
-        const SizedBox(height: 16),
         _buildSummaryCard(parsed['summary'] ?? ''),
+
+        // === 🏠 Tombol kembali ke halaman utama ===
+        const SizedBox(height: 30),
+        Center(
+          child: ElevatedButton.icon(
+            label: const Text(
+              "Finish (終了)",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F8FFD),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(7),
+              ),
+              elevation: 3,
+            ),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()), // ubah sesuai nama halaman utamamu
+                (route) => false,
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 30),
       ],
     );
+
   }
 
-  Widget _buildScoreCircle(String text) {
-    final score = _extractScore(text);
-    final percentage = score / 10;
-    final message = _scoreMessage(score);
+  Widget _buildScoreCircle() {
+    final s = score ?? 0.0;
+    final percentage = s / 10;
+    final message = _scoreMessage(s);
 
     return Center(
       child: Column(
@@ -276,7 +305,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      score.toStringAsFixed(1),
+                      s.toStringAsFixed(1),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

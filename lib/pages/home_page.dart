@@ -3,6 +3,7 @@ import '../widgets/persona_card.dart';
 import '../services/api_service.dart';
 import './topic_selection_page.dart';
 import './settings_page.dart';
+import './feedback_history_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> personas = [];
   bool loading = true;
 
-  // progress dummy (bisa nanti juga ambil dari backend)
+  // Dummy progress (nanti bisa ambil dari backend)
   final int practiceMinutes = 15;
   final int targetMinutes = 30;
 
@@ -33,14 +34,15 @@ class _HomePageState extends State<HomePage> {
         loading = false;
       });
     } catch (e) {
-      print("Error fetching personas: $e");
+      print("⚠️ Error fetching personas: $e");
       setState(() => loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double practiceProgress = practiceMinutes / targetMinutes;
+    final double practiceProgress =
+        (practiceMinutes / targetMinutes).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE9ECF2),
@@ -53,16 +55,21 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ==== Card Progress ====
+                  // === Progress Card ===
                   _buildProgressCard(practiceProgress),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 32),
+
                   const Text(
                     "Choose a Persona:",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF222B45),
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
-                  // ==== Jika masih loading ====
+                  // === Persona List ===
                   if (loading)
                     const Center(
                       child: Padding(
@@ -101,74 +108,128 @@ class _HomePageState extends State<HomePage> {
                         );
                       }).toList(),
                     ),
+
+                  const SizedBox(height: 15),
+
+                  // === Feedback History Button (paling bawah) ===
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) =>
+                                const FeedbackHistoryPage(userId: 1), // TODO: ubah userId dinamis
+                            transitionsBuilder: (_, anim, __, child) =>
+                                FadeTransition(opacity: anim, child: child),
+                            transitionDuration:
+                                const Duration(milliseconds: 400),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 130, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.history_rounded,
+                                color: Color(0xFF4F8FFD), size: 22),
+                            SizedBox(width: 10),
+                            Text(
+                              "View Feedback History",
+                              style: TextStyle(
+                                color: Color(0xFF4F8FFD),
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
 
-          // ==== Custom App Bar ====
-          Container(
-            height: 90,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.13),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.only(left: 20, right: 8, top: 1, bottom: 1),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        "Fluentia",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: 1),
-                      Text(
-                        "Practice speaking Japanese daily",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+          // === Custom App Bar ===
+          _buildAppBar(context),
+        ],
+      ),
+    );
+  }
+
+  // ======================================================
+  // 🧱 Custom App Bar
+  // ======================================================
+  Widget _buildAppBar(BuildContext context) {
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.13),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.only(left: 20, right: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  "Fluentia",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.black),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsPage(),
-                      ),
-                    );
-                  },
-                  tooltip: 'Settings',
+                SizedBox(height: 2),
+                Text(
+                  "Practice speaking Japanese daily",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.black),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // ==== Helper: Card Progress ====
-  Widget _buildProgressCard(double practiceProgress) {
+  // ======================================================
+  // 📊 Progress Card
+  // ======================================================
+  Widget _buildProgressCard(double progress) {
     return Card(
       elevation: 3,
       color: Colors.white,
@@ -182,7 +243,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             Row(
               children: const [
-                Icon(Icons.bar_chart, color: Color(0xFF4F8FFD), size: 28),
+                Icon(Icons.bar_chart_rounded,
+                    color: Color(0xFF4F8FFD), size: 28),
                 SizedBox(width: 10),
                 Text(
                   "Today's Progress",
@@ -195,54 +257,49 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 24),
-            // Progress bar gradient custom
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Stack(
-                children: [
-                  Container(
+
+            // === Progress Bar ===
+            Stack(
+              children: [
+                Container(
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
                     height: 14,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF76C7FD), Color(0xFF4F8FFD)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Container(
-                        height: 14,
-                        width: constraints.maxWidth * practiceProgress,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF76C7FD), Color(0xFF4F8FFD)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      );
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text("0m", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        Text("30m", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                "Daily Goals: $practiceMinutes/$targetMinutes minutes",
-                style: const TextStyle(fontSize: 14, color: Colors.black),
-              ),
+            const SizedBox(height: 10),
+
+            // Labels
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("0m",
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text("$targetMinutes m",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              "Daily Goals: $practiceMinutes / $targetMinutes minutes",
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
           ],
         ),

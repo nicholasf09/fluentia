@@ -86,7 +86,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    const userId = "user123";
+    const userId = "1";
 
     return Stack(
       children: [
