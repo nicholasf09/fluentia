@@ -1,5 +1,6 @@
 {
     "dart.flutterHotReloadOnSave": "all",
     "dart.hotReloadOnSave": "all",
-    "files.autoSave": "afterDelay"
+    "files.autoSave": "afterDelay",
+    "cmake.sourceDirectory": "C:/fluentia/fluentia/linux"
 }

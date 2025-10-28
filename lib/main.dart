@@ -1,16 +1,13 @@
-import 'package:fluentia/pages/home_page.dart';
-import 'package:fluentia/pages/topic_selection_page.dart'; // ✅ tambahkan ini
 import 'package:flutter/material.dart';
+import 'package:fluentia/pages/home_page.dart';
+import 'package:fluentia/pages/auth_page.dart';
+import 'package:fluentia/services/api_service.dart';
+
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() {
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.dumpErrorToConsole(details);
-    debugPrint("🔥 Flutter caught error: ${details.exceptionAsString()}");
-    if (details.stack != null) {
-      debugPrintStack(stackTrace: details.stack);
-    }
-  };
-
+  WidgetsFlutterBinding.ensureInitialized(); // 🔧 pastikan SharedPreferences siap
   runApp(const FluentiaApp());
 }
 
@@ -26,22 +23,39 @@ class FluentiaApp extends StatefulWidget {
 
 class _FluentiaAppState extends State<FluentiaApp> {
   ThemeMode _themeMode = ThemeMode.light;
+  Widget? _startPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
 
   void changeTheme(ThemeMode mode) {
+    setState(() => _themeMode = mode);
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final token = await ApiService.getToken();
+
+    // Tambahkan sedikit delay agar splash tidak terlalu cepat
+    await Future.delayed(const Duration(seconds: 1));
+
     setState(() {
-      _themeMode = mode;
+      if (token != null && token.isNotEmpty) {
+        _startPage = const HomePage();
+      } else {
+        _startPage = const AuthPage();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Fluentia',
-
-      // ✅ Tambahkan ini agar semua _safeShowSnackBar() di seluruh app aman
+      debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
-
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
@@ -56,7 +70,51 @@ class _FluentiaAppState extends State<FluentiaApp> {
         ),
       ),
       themeMode: _themeMode,
-      home: const HomePage(),
+      // ⏳ tampilkan splash kalau _startPage belum diset
+      home: _startPage ?? const SplashScreen(),
+    );
+  }
+}
+
+/// ======================================================
+/// ✨ Splash Screen (Logo Fluentia + Gradient)
+/// ======================================================
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF4F8FFD), Color(0xFFA9D6FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Fluentia",
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              SizedBox(height: 10),
+              CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

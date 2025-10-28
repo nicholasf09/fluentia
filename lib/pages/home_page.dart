@@ -15,6 +15,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<dynamic> personas = [];
   bool loading = true;
+  String? userId;
+  String? userName;
+
 
   // Dummy progress (nanti bisa ambil dari backend)
   final int practiceMinutes = 15;
@@ -23,7 +26,18 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchPersonas();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _loadUserId();
+    await _fetchPersonas();
+    await _loadUserProfile();
+  }
+
+  Future<void> _loadUserId() async {
+    final id = await ApiService.getUserId();
+    setState(() => userId = id);
   }
 
   Future<void> _fetchPersonas() async {
@@ -34,8 +48,24 @@ class _HomePageState extends State<HomePage> {
         loading = false;
       });
     } catch (e) {
-      print("⚠️ Error fetching personas: $e");
+      debugPrint("⚠️ Error fetching personas: $e");
       setState(() => loading = false);
+    }
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final result = await ApiService.getUserProfile();
+
+      if (result['success'] == true && result['data'] != null) {
+        setState(() {
+          userName = result['data']['name']; // pastikan field dari backend adalah "name"
+        });
+      } else {
+        debugPrint("⚠️ Gagal ambil profil: ${result['message']}");
+      }
+    } catch (e) {
+      debugPrint("⚠️ Error getUserProfile: $e");
     }
   }
 
@@ -112,10 +142,19 @@ class _HomePageState extends State<HomePage> {
                   // === Feedback History Button ===
                   Center(
                     child: GestureDetector(
-                      onTap: () {
+                      onTap: () async {
+                        final id = await ApiService.getUserId();
+                        if (id == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text("User ID not found. Please login again.")),
+                          );
+                          return;
+                        }
+
                         _fadeSlideNavigate(
                           context,
-                          const FeedbackHistoryPage(userId: 1), // TODO: ubah userId dinamis
+                          FeedbackHistoryPage(userId: int.parse(id)),
                         );
                       },
                       child: Container(
@@ -174,7 +213,7 @@ class _HomePageState extends State<HomePage> {
           );
 
           final slide = Tween<Offset>(
-            begin: const Offset(0.5, 0.0), // dari kanan (offset kecil)
+            begin: const Offset(0.5, 0.0),
             end: Offset.zero,
           ).animate(CurvedAnimation(
             parent: animation,
@@ -250,6 +289,8 @@ class _HomePageState extends State<HomePage> {
   // 📊 Progress Card
   // ======================================================
   Widget _buildProgressCard(double progress) {
+    final String greeting = "こんにちは、${userName ?? 'ゲスト'}さん！"; // ← Tambahkan greeting Jepang
+
     return Card(
       elevation: 3,
       color: Colors.white,
@@ -261,14 +302,15 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 👋 Greeting Section
             Row(
-              children: const [
-                Icon(Icons.bar_chart_rounded,
+              children: [
+                const Icon(Icons.waving_hand_rounded,
                     color: Color(0xFF4F8FFD), size: 28),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Text(
-                  "Today's Progress",
-                  style: TextStyle(
+                  greeting, // ← tampilkan sapaan
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF222B45),
@@ -276,7 +318,9 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 16),
+
 
             // === Progress Bar ===
             Stack(
@@ -304,9 +348,9 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 10),
 
-            // Labels
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -317,9 +361,24 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 14),
-            Text(
-              "Daily Goals: $practiceMinutes / $targetMinutes minutes",
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Color(0xFF4F8FFD),
+                  size: 24,
+                ),
+                const SizedBox(width: 8), // jarak kecil antara ikon dan teks
+                Text(
+                  "Daily Goals: $practiceMinutes / $targetMinutes minutes",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
