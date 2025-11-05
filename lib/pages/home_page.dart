@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/persona_card.dart';
 import '../services/api_service.dart';
 import './topic_selection_page.dart';
@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initializeData() async {
     await _loadUserId();
+    await _loadCachedUsername();
     await _fetchPersonas();
     await _loadUserProfile();
   }
@@ -38,6 +39,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadUserId() async {
     final id = await ApiService.getUserId();
     setState(() => userId = id);
+  }
+
+  Future<void> _loadCachedUsername() async {
+    final cached = await ApiService.getUsername();
+    if (!mounted) return;
+    if (cached != null && cached.isNotEmpty) {
+      setState(() => userName = cached);
+    }
   }
 
   Future<void> _fetchPersonas() async {
@@ -48,7 +57,7 @@ class _HomePageState extends State<HomePage> {
         loading = false;
       });
     } catch (e) {
-      debugPrint("⚠️ Error fetching personas: $e");
+      debugPrint("ΓÜá∩╕Å Error fetching personas: $e");
       setState(() => loading = false);
     }
   }
@@ -57,15 +66,35 @@ class _HomePageState extends State<HomePage> {
     try {
       final result = await ApiService.getUserProfile();
 
-      if (result['success'] == true && result['data'] != null) {
-        setState(() {
-          userName = result['data']['name']; // pastikan field dari backend adalah "name"
-        });
+      if (result['success'] == true && result['data'] is Map<String, dynamic>) {
+        final data = result['data'] as Map<String, dynamic>;
+        final nestedUser = data['user'];
+        String? profileUsername = data['username'] as String?;
+
+        if ((profileUsername == null || profileUsername.isEmpty) &&
+            nestedUser is Map<String, dynamic>) {
+          final nestedUsername = nestedUser['username'];
+          if (nestedUsername is String && nestedUsername.isNotEmpty) {
+            profileUsername = nestedUsername;
+          }
+        }
+
+        profileUsername ??= data['name'] as String?;
+        profileUsername ??= data['username_katakana'] as String?;
+
+        if (profileUsername != null && profileUsername.isNotEmpty) {
+          if (!mounted) return;
+          setState(() {
+            userName = profileUsername;
+          });
+        } else {
+          debugPrint("Username tidak ditemukan di profil.");
+        }
       } else {
-        debugPrint("⚠️ Gagal ambil profil: ${result['message']}");
+        debugPrint("Gagal mengambil profil: ${result['message']}");
       }
     } catch (e) {
-      debugPrint("⚠️ Error getUserProfile: $e");
+      debugPrint("Error getUserProfile: $e");
     }
   }
 
@@ -198,7 +227,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======================================================
-  // 🌫️ Helper untuk Fade + Slide Navigation
+  // ≡ƒî½∩╕Å Helper untuk Fade + Slide Navigation
   // ======================================================
   void _fadeSlideNavigate(BuildContext context, Widget page) {
     Navigator.push(
@@ -230,7 +259,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======================================================
-  // 🧱 Custom App Bar
+  // ≡ƒº▒ Custom App Bar
   // ======================================================
   Widget _buildAppBar(BuildContext context) {
     return Container(
@@ -286,7 +315,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ======================================================
-  // 📊 Progress Card
+  // ≡ƒôè Progress Card
   // ======================================================
   Widget _buildProgressCard(double progress) {
     final String greeting = "こんにちは、${userName ?? 'ゲスト'}さん！"; // ← Tambahkan greeting Jepang
@@ -302,14 +331,14 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 👋 Greeting Section
+            // ≡ƒæï Greeting Section
             Row(
               children: [
                 const Icon(Icons.waving_hand_rounded,
                     color: Color(0xFF4F8FFD), size: 28),
                 const SizedBox(width: 10),
                 Text(
-                  greeting, // ← tampilkan sapaan
+                  greeting, // ΓåÉ tampilkan sapaan
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,

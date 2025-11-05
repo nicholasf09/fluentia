@@ -265,6 +265,24 @@ class ApiService {
     return null;
   }
 
+  static String? _extractUsername(dynamic payload) {
+    if (payload is Map<String, dynamic>) {
+      final directUsername = payload["username"];
+      if (directUsername is String && directUsername.isNotEmpty) {
+        return directUsername;
+      }
+
+      final nestedUser = payload["user"];
+      if (nestedUser is Map<String, dynamic>) {
+        final nestedUsername = nestedUser["username"];
+        if (nestedUsername is String && nestedUsername.isNotEmpty) {
+          return nestedUsername;
+        }
+      }
+    }
+    return null;
+  }
+
   // =======================================================
   // 🔹 PERSONA
   // =======================================================
@@ -405,6 +423,12 @@ class ApiService {
       } else {
         await clearUsernameKatakana();
       }
+      final extractedUsername = _extractUsername(data) ?? username;
+      if (extractedUsername.isNotEmpty) {
+        await saveUsername(extractedUsername);
+      } else {
+        await clearUsername();
+      }
       return {"success": true, "data": data};
     } else {
       return {
@@ -440,6 +464,12 @@ class ApiService {
       } else {
         await clearUsernameKatakana();
       }
+      final extractedUsername = _extractUsername(data);
+      if (extractedUsername != null && extractedUsername.isNotEmpty) {
+        await saveUsername(extractedUsername);
+      } else {
+        await clearUsername();
+      }
       return {"success": true, "data": data};
     } else {
       return {
@@ -472,9 +502,19 @@ class ApiService {
     await prefs.setString("username_katakana", katakana);
   }
 
+  static Future<void> saveUsername(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("username", username);
+  }
+
   static Future<void> clearUsernameKatakana() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("username_katakana");
+  }
+
+  static Future<void> clearUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove("username");
   }
 
   static Future<String?> getUserId() async {
@@ -487,11 +527,17 @@ class ApiService {
     return prefs.getString("username_katakana");
   }
 
+  static Future<String?> getUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("username");
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("token");
     await prefs.remove("user_id");
     await prefs.remove("username_katakana");
+    await prefs.remove("username");
   }
 
   // =======================================================
@@ -513,6 +559,10 @@ class ApiService {
 
     print(data);
     if (response.statusCode == 200) {
+      final extractedUsername = _extractUsername(data);
+      if (extractedUsername != null && extractedUsername.isNotEmpty) {
+        await saveUsername(extractedUsername);
+      }
       return {"success": true, "data": data};
     } else {
       return {"success": false, "message": data["detail"] ?? "Gagal memuat profil."};
