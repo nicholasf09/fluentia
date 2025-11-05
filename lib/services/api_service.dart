@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // ⚙️ Base URL FastAPI
-  static const String baseUrl = "http://127.0.0.1:8000";
+  static const String baseUrl = "https://u1083-nicholas-backend.gpu3.petra.ac.id";
   // Android emulator: "http://10.0.2.2:8000"
   // HP fisik: ganti sesuai IP laptop misalnya "http://192.168.1.5:8000"
 
