@@ -24,10 +24,12 @@ class TopicSelectionPage extends StatefulWidget {
 class _TopicSelectionPageState extends State<TopicSelectionPage> {
   bool _isLoading = false;
   List<dynamic> _topics = [];
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _fetchTopics();
   }
 
@@ -49,6 +51,19 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
       _safeShowSnackBar("Gagal memuat topik: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadUserId() async {
+    try {
+      final id = await ApiService.getUserId();
+      if (!mounted) return;
+      setState(() {
+        _userId = id;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _safeShowSnackBar("Gagal memuat user ID: $e");
     }
   }
 
@@ -107,8 +122,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    const userId = "1";
-
     return Stack(
       children: [
         Scaffold(
@@ -205,6 +218,18 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                             if (!mounted) return;
                             debugPrint(
                                 "🟢 Start conversation tapped for topic ${topic["en_title"]}");
+                            final userId = _userId;
+                            if (userId == null || userId.isEmpty) {
+                              rootScaffoldMessengerKey.currentState
+                                  ?.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      "User ID tidak ditemukan. Silakan login kembali."),
+                                ),
+                              );
+                              return;
+                            }
+
                             setState(() => _isLoading = true);
 
                             try {

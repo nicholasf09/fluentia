@@ -9,6 +9,262 @@ class ApiService {
   // Android emulator: "http://10.0.2.2:8000"
   // HP fisik: ganti sesuai IP laptop misalnya "http://192.168.1.5:8000"
 
+  static const Map<String, String> _romajiKatakanaMap = {
+    "kya": "キャ",
+    "kyu": "キュ",
+    "kyo": "キョ",
+    "gya": "ギャ",
+    "gyu": "ギュ",
+    "gyo": "ギョ",
+    "sha": "シャ",
+    "shu": "シュ",
+    "sho": "ショ",
+    "sya": "シャ",
+    "syu": "シュ",
+    "syo": "ショ",
+    "cha": "チャ",
+    "chu": "チュ",
+    "cho": "チョ",
+    "cya": "チャ",
+    "cyu": "チュ",
+    "cyo": "チョ",
+    "jya": "ジャ",
+    "jyu": "ジュ",
+    "jyo": "ジョ",
+    "ja": "ジャ",
+    "ju": "ジュ",
+    "jo": "ジョ",
+    "tya": "チャ",
+    "tyu": "チュ",
+    "tyo": "チョ",
+    "dya": "ジャ",
+    "dyu": "ジュ",
+    "dyo": "ジョ",
+    "nya": "ニャ",
+    "nyu": "ニュ",
+    "nyo": "ニョ",
+    "hya": "ヒャ",
+    "hyu": "ヒュ",
+    "hyo": "ヒョ",
+    "mya": "ミャ",
+    "myu": "ミュ",
+    "myo": "ミョ",
+    "rya": "リャ",
+    "ryu": "リュ",
+    "ryo": "リョ",
+    "bya": "ビャ",
+    "byu": "ビュ",
+    "byo": "ビョ",
+    "pya": "ピャ",
+    "pyu": "ピュ",
+    "pyo": "ピョ",
+    "fya": "フャ",
+    "fyu": "フュ",
+    "fyo": "フョ",
+    "fa": "ファ",
+    "fi": "フィ",
+    "fe": "フェ",
+    "fo": "フォ",
+    "va": "ヴァ",
+    "vi": "ヴィ",
+    "vu": "ヴ",
+    "ve": "ヴェ",
+    "vo": "ヴォ",
+    "tsa": "ツァ",
+    "tsi": "ツィ",
+    "tse": "ツェ",
+    "tso": "ツォ",
+    "je": "ジェ",
+    "she": "シェ",
+    "che": "チェ",
+    "thi": "ティ",
+    "dhi": "ディ",
+    "twa": "トァ",
+    "twi": "トィ",
+    "twu": "トゥ",
+    "twe": "トェ",
+    "two": "トォ",
+    "dwa": "ドァ",
+    "dwi": "ドィ",
+    "dwu": "ドゥ",
+    "dwe": "ドェ",
+    "dwo": "ドォ",
+    "kwa": "クァ",
+    "kwi": "クィ",
+    "kwu": "クゥ",
+    "kwe": "クェ",
+    "kwo": "クォ",
+    "shi": "シ",
+    "si": "シ",
+    "chi": "チ",
+    "ti": "ティ",
+    "tsu": "ツ",
+    "tu": "トゥ",
+    "ji": "ジ",
+    "zi": "ジ",
+    "zu": "ズ",
+    "dzu": "ヅ",
+    "di": "ディ",
+    "du": "ドゥ",
+    "fu": "フ",
+    "hu": "フ",
+    "ye": "イェ",
+    "a": "ア",
+    "i": "イ",
+    "u": "ウ",
+    "e": "エ",
+    "o": "オ",
+    "ka": "カ",
+    "ki": "キ",
+    "ku": "ク",
+    "ke": "ケ",
+    "ko": "コ",
+    "ga": "ガ",
+    "gi": "ギ",
+    "gu": "グ",
+    "ge": "ゲ",
+    "go": "ゴ",
+    "sa": "サ",
+    "su": "ス",
+    "se": "セ",
+    "so": "ソ",
+    "za": "ザ",
+    "ze": "ゼ",
+    "zo": "ゾ",
+    "ta": "タ",
+    "te": "テ",
+    "to": "ト",
+    "da": "ダ",
+    "de": "デ",
+    "do": "ド",
+    "na": "ナ",
+    "ni": "ニ",
+    "nu": "ヌ",
+    "ne": "ネ",
+    "no": "ノ",
+    "ha": "ハ",
+    "hi": "ヒ",
+    "he": "ヘ",
+    "ho": "ホ",
+    "ba": "バ",
+    "bi": "ビ",
+    "bu": "ブ",
+    "be": "ベ",
+    "bo": "ボ",
+    "pa": "パ",
+    "pi": "ピ",
+    "pu": "プ",
+    "pe": "ペ",
+    "po": "ポ",
+    "ma": "マ",
+    "mi": "ミ",
+    "mu": "ム",
+    "me": "メ",
+    "mo": "モ",
+    "ya": "ヤ",
+    "yu": "ユ",
+    "yo": "ヨ",
+    "ra": "ラ",
+    "ri": "リ",
+    "ru": "ル",
+    "re": "レ",
+    "ro": "ロ",
+    "la": "ラ",
+    "li": "リ",
+    "lu": "ル",
+    "le": "レ",
+    "lo": "ロ",
+    "wa": "ワ",
+    "wo": "ヲ",
+    "n": "ン"
+  };
+
+  static final List<String> _romajiSequences =
+      (_romajiKatakanaMap.keys.toList()..sort((a, b) => b.length.compareTo(a.length)));
+  static final RegExp _vowelRegex = RegExp(r'[aeiou]');
+  static final RegExp _alphabetRegex = RegExp(r'[a-z]');
+
+  static String _romajiToKatakana(String input) {
+    if (input.isEmpty) return "";
+
+    final lower = input.toLowerCase();
+    final buffer = StringBuffer();
+    var index = 0;
+
+    while (index < lower.length) {
+      final char = lower[index];
+      final originalChar = input[index];
+
+      if (char == ' ' || char == '\t') {
+        buffer.write(originalChar);
+        index++;
+        continue;
+      }
+
+      if (char == '-' || char == 'ー') {
+        buffer.write('ー');
+        index++;
+        continue;
+      }
+
+      if (index + 1 < lower.length &&
+          char == lower[index + 1] &&
+          char != 'n' &&
+          !_vowelRegex.hasMatch(char) &&
+          _alphabetRegex.hasMatch(char)) {
+        buffer.write('ッ');
+        index++;
+        continue;
+      }
+
+      var matched = false;
+      for (final key in _romajiSequences) {
+        if (lower.startsWith(key, index)) {
+          final katakana = _romajiKatakanaMap[key];
+          if (katakana != null) {
+            buffer.write(katakana);
+            index += key.length;
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if (matched) {
+        continue;
+      }
+
+      if (char == 'n') {
+        buffer.write('ン');
+        index++;
+        continue;
+      }
+
+      buffer.write(originalChar);
+      index++;
+    }
+
+    return buffer.toString();
+  }
+
+  static String? _extractUsernameKatakana(dynamic payload) {
+    if (payload is Map<String, dynamic>) {
+      final directKatakana = payload["username_katakana"];
+      if (directKatakana is String && directKatakana.isNotEmpty) {
+        return directKatakana;
+      }
+
+      final nestedUser = payload["user"];
+      if (nestedUser is Map<String, dynamic>) {
+        final nestedKatakana = nestedUser["username_katakana"];
+        if (nestedKatakana is String && nestedKatakana.isNotEmpty) {
+          return nestedKatakana;
+        }
+      }
+    }
+    return null;
+  }
+
   // =======================================================
   // 🔹 PERSONA
   // =======================================================
@@ -124,8 +380,10 @@ class ApiService {
     required String password,
   }) async {
     final url = Uri.parse("$baseUrl/register/");
+    final usernameKatakana = _romajiToKatakana(username);
     final body = json.encode({
       "username": username,
+      "username_katakana": usernameKatakana,
       "email": email,
       "password": password,
     });
@@ -140,6 +398,13 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       if (data.containsKey("token")) await saveToken(data["token"]);
       if (data.containsKey("user_id")) await saveUserId(data["user_id"]);
+      final extractedKatakana =
+          _extractUsernameKatakana(data) ?? usernameKatakana;
+      if (extractedKatakana.isNotEmpty) {
+        await saveUsernameKatakana(extractedKatakana);
+      } else {
+        await clearUsernameKatakana();
+      }
       return {"success": true, "data": data};
     } else {
       return {
@@ -169,6 +434,12 @@ class ApiService {
     if (response.statusCode == 200) {
       if (data.containsKey("token")) await saveToken(data["token"]);
       if (data.containsKey("user_id")) await saveUserId(data["user_id"]);
+      final extractedKatakana = _extractUsernameKatakana(data);
+      if (extractedKatakana != null && extractedKatakana.isNotEmpty) {
+        await saveUsernameKatakana(extractedKatakana);
+      } else {
+        await clearUsernameKatakana();
+      }
       return {"success": true, "data": data};
     } else {
       return {
@@ -196,15 +467,31 @@ class ApiService {
     await prefs.setString("user_id", id.toString());
   }
 
+  static Future<void> saveUsernameKatakana(String katakana) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("username_katakana", katakana);
+  }
+
+  static Future<void> clearUsernameKatakana() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove("username_katakana");
+  }
+
   static Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString("user_id");
+  }
+
+  static Future<String?> getUsernameKatakana() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("username_katakana");
   }
 
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("token");
     await prefs.remove("user_id");
+    await prefs.remove("username_katakana");
   }
 
   // =======================================================
@@ -263,6 +550,7 @@ class ApiService {
         body: jsonEncode({
           "text": text,
           "speaker": speaker,
+          "user_id": await getUserId(),
         }),
       );
 

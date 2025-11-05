@@ -76,6 +76,7 @@ class _ConversationPageState extends State<ConversationPage> {
         "user_id": widget.userId,
         "persona": widget.personaName,
         "topic": widget.topic,
+        "topic_id": widget.topicId,
       };
 
       print("🚀 Sending message to /chat/: $body");
