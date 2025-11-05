@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -118,13 +119,13 @@ class ApiService {
   // 🔐 AUTH (LOGIN & REGISTER)
   // =======================================================
   static Future<Map<String, dynamic>> register({
-    required String name,
+    required String username,
     required String email,
     required String password,
   }) async {
     final url = Uri.parse("$baseUrl/register/");
     final body = json.encode({
-      "name": name,
+      "username": username,
       "email": email,
       "password": password,
     });
@@ -247,6 +248,54 @@ class ApiService {
       return jsonDecode(response.body);
     } else {
       throw Exception("Gagal melakukan POST ke $url (${response.statusCode})");
+    }
+  }
+  // =======================================================
+  // 🔊 VOICEVOX TTS (Text-to-Speech)
+  // =======================================================
+  static Future<Uint8List?> generateTTS(String text, {required int speaker}) async {
+    final url = Uri.parse("$baseUrl/voice/stream");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "text": text,
+          "speaker": speaker,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        print("⚠️ Gagal generate suara (${response.statusCode})");
+        return null;
+      }
+    } catch (e) {
+      print("❌ Error generate TTS: $e");
+      return null;
+    }
+  }
+
+
+  // =======================================================
+  // 🔁 OPTIONAL: Ambil audio terakhir dari server (untuk polling / cache)
+  // =======================================================
+  static Future<String?> getLatestAudioUrl(String userId) async {
+    final url = Uri.parse("$baseUrl/audio/latest?user_id=$userId");
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["audio_url"];
+      } else {
+        print("⚠️ Gagal mengambil audio terbaru (${response.statusCode})");
+        return null;
+      }
+    } catch (e) {
+      print("❌ Error mengambil audio: $e");
+      return null;
     }
   }
 }

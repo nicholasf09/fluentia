@@ -11,6 +11,7 @@ class ConversationPage extends StatefulWidget {
   final String firstMessage;
   final String userId;
   final String imagePath;
+  final int? voiceId;
 
   const ConversationPage({
     super.key,
@@ -20,6 +21,7 @@ class ConversationPage extends StatefulWidget {
     required this.firstMessage,
     required this.userId,
     required this.imagePath,
+    this.voiceId,
   });
 
   @override
@@ -74,7 +76,6 @@ class _ConversationPageState extends State<ConversationPage> {
         "user_id": widget.userId,
         "persona": widget.personaName,
         "topic": widget.topic,
-        "topic_id": widget.topicId,
       };
 
       print("🚀 Sending message to /chat/: $body");
@@ -82,6 +83,9 @@ class _ConversationPageState extends State<ConversationPage> {
       final response = await ApiService.postJson(url, body);
 
       String reply = (response["response"] ?? "").toString();
+      int voiceId = response["voice_id"];
+      
+      print("🚀 Received reply: $reply (voiceId: $voiceId)");
       reply = reply
           .replaceAll(RegExp(r"<think>.*?</think>", dotAll: true), "")
           .trim();
@@ -262,6 +266,7 @@ class _ConversationPageState extends State<ConversationPage> {
                   text: safeText.isEmpty ? "（メッセージなし）" : safeText,
                   isUser: msg["isUser"] ?? false,
                   avatarPath: !(msg["isUser"] ?? false) ? avatarPath : null,
+                  voiceId: !(msg["isUser"] ?? false) ? widget.voiceId : null,
                 );
               },
             ),

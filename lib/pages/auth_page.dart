@@ -14,7 +14,7 @@ class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
-  final TextEditingController _name = TextEditingController();
+  final TextEditingController _username = TextEditingController();
 
   bool _isLoading = false;
   bool _obscure = true;
@@ -111,8 +111,8 @@ class _AuthPageState extends State<AuthPage> {
           // === Name (Register only)
           if (!isLogin) ...[
             TextFormField(
-              controller: _name,
-              decoration: _inputDecoration("Nama Lengkap"),
+              controller: _username,
+              decoration: _inputDecoration("Nama Pengguna"),
               validator: (v) => v!.isEmpty ? "Nama tidak boleh kosong" : null,
             ),
             const SizedBox(height: 16),
@@ -229,7 +229,7 @@ class _AuthPageState extends State<AuthPage> {
       } else {
         // 🔹 REGISTER ke FastAPI
         result = await ApiService.register(
-          name: _name.text.trim(),
+          username: _username.text.trim(),
           email: _email.text.trim(),
           password: _password.text.trim(),
         );

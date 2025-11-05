@@ -53,7 +53,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
   }
 
   /// === Ambil pesan pertama dari endpoint /chat ===
-  Future<String> _fetchFirstMessage(String topicId, String userId) async {
+  Future<Map<String, dynamic>> _fetchFirstMessage(String topicId, String userId) async {
     if (topicId.isEmpty || userId.isEmpty) {
       throw Exception("TopicId atau UserId tidak boleh kosong");
     }
@@ -67,8 +67,15 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     };
 
     debugPrint("🚀 Sending to /chat/: $body");
-    final response = await ApiService.postJson(url, body);
-    return response["response"] ?? "エラーが発生しました。";
+   final response = await ApiService.postJson(url, body);
+    final reply = response["response"] ?? "エラーが発生しました。";
+    final voiceId = response["voice_id"]; 
+
+    return {
+      "text": reply,
+      "voice_id": voiceId,
+    };
+
   }
 
   Color _getLevelColor(String level) {
@@ -223,7 +230,8 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                                     topic: topic["en_title"] ?? "No Title",
                                     topicId:
                                         topic["topic_id"]?.toString() ?? "",
-                                    firstMessage: firstMessage,
+                                    firstMessage: firstMessage["text"] ?? "",
+                                    voiceId: firstMessage["voice_id"],
                                     userId: userId,
                                     imagePath: widget.imagePath,
                                   ),

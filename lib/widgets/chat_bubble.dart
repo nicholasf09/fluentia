@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:audioplayers/audioplayers.dart';
 import 'dart:convert';
+import 'package:fluentia/services/api_service.dart';
+
 
 class ChatBubble extends StatefulWidget {
   final String text;
   final bool isUser;
   final String? avatarPath;
+  final int? voiceId;
 
   const ChatBubble({
     super.key,
     required this.text,
     required this.isUser,
     this.avatarPath,
+    this.voiceId,
   });
 
   @override
@@ -20,21 +25,48 @@ class ChatBubble extends StatefulWidget {
 
 class _ChatBubbleState extends State<ChatBubble> {
   String? _translation;
-  bool _isLoading = false;
+  bool _isLoadingTranslate = false;
+  bool _isPlaying = false;
 
+  final AudioPlayer _player = AudioPlayer();
+
+  // 🌐 Ganti dengan URL backend-mu
+  static const String baseUrl = "http://localhost:8000";
+
+  // === 🎧 Fungsi untuk memutar suara dari backend ===
+  Future<void> _playTTS() async {
+  if (_isPlaying || widget.text.trim().isEmpty) return;
+
+  setState(() => _isPlaying = true);
+
+  try {
+    final bytes = await ApiService.generateTTS(widget.text, speaker: widget.voiceId ?? 1);
+    if (bytes != null) {
+      await _player.play(BytesSource(bytes));
+    } else {
+      _showSnack("⚠️ Gagal memutar suara (null bytes)");
+    }
+  } catch (e) {
+    _showSnack("⚠️ Error: $e");
+  }
+
+  setState(() => _isPlaying = false);
+}
+
+
+  // === 🌍 Fungsi untuk terjemahkan teks ===
   Future<void> _translateText() async {
-    // Hindari klik ganda atau teks kosong
-    if (_isLoading || widget.text.trim().isEmpty) return;
+    if (_isLoadingTranslate || widget.text.trim().isEmpty) return;
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoadingTranslate = true);
 
     try {
       final response = await http.post(
-        Uri.parse("https://u1083-nicholas.gpu3.petra.ac.id/translate"),
+        Uri.parse("$baseUrl/translate"),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           "text": widget.text,
-          "target_lang": "id", // bisa diubah sesuai kebutuhan
+          "target_lang": "id",
         }),
       );
 
@@ -44,25 +76,25 @@ class _ChatBubbleState extends State<ChatBubble> {
           _translation = data["translation"] ?? "⚠️ Terjemahan tidak tersedia.";
         });
       } else {
-        setState(() {
-          _translation = "⚠️ Gagal menerjemahkan (Status: ${response.statusCode})";
-        });
+        _translation = "⚠️ Gagal menerjemahkan (Status: ${response.statusCode})";
       }
     } catch (e) {
-      setState(() {
-        _translation = "⚠️ Error: $e";
-      });
+      _translation = "⚠️ Error: $e";
     }
 
-    setState(() => _isLoading = false);
+    setState(() => _isLoadingTranslate = false);
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Pastikan text tidak null atau kosong
     final safeText =
-        (widget.text.trim().isEmpty ? "（メッセージなし）" : widget.text).toString();
-
+        widget.text.trim().isEmpty ? "（メッセージなし）" : widget.text.trim();
     final bubbleColor =
         widget.isUser ? Colors.blue.shade100 : Colors.grey.shade200;
 
@@ -93,7 +125,7 @@ class _ChatBubbleState extends State<ChatBubble> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // Bubble utama
+                // === Bubble Utama ===
                 Container(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.7,
@@ -137,7 +169,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                   ),
                 ),
 
-                // Tombol kecil di pojok kanan bawah (translate + speaker)
+                // === Tombol Translate + Speaker ===
                 if (!widget.isUser)
                   Positioned(
                     bottom: -12,
@@ -145,23 +177,17 @@ class _ChatBubbleState extends State<ChatBubble> {
                     child: Row(
                       children: [
                         _buildMiniCircleButton(
-                          icon: _isLoading
+                          icon: _isLoadingTranslate
                               ? Icons.hourglass_top
                               : Icons.translate,
                           onTap: _translateText,
                         ),
                         const SizedBox(width: 6),
                         _buildMiniCircleButton(
-                          icon: Icons.volume_up,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text("🔊 Speaker tapped (fitur belum aktif)"),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
+                          icon: _isPlaying
+                              ? Icons.hourglass_top
+                              : Icons.volume_up_rounded,
+                          onTap: _playTTS,
                         ),
                       ],
                     ),
