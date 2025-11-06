@@ -25,6 +25,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
   bool _isLoading = false;
   List<dynamic> _topics = [];
   String? _userId;
+  String? _username;
 
   @override
   void initState() {
@@ -57,18 +58,24 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
   Future<void> _loadUserId() async {
     try {
       final id = await ApiService.getUserId();
+      final username = await ApiService.getUsername();
       if (!mounted) return;
       setState(() {
         _userId = id;
+        _username = username;
       });
     } catch (e) {
       if (!mounted) return;
-      _safeShowSnackBar("Gagal memuat user ID: $e");
+      _safeShowSnackBar("Gagal memuat data pengguna: $e");
     }
   }
 
   /// === Ambil pesan pertama dari endpoint /chat ===
-  Future<Map<String, dynamic>> _fetchFirstMessage(String topicId, String userId) async {
+  Future<Map<String, dynamic>> _fetchFirstMessage(
+    String topicId,
+    String userId,
+    String username,
+  ) async {
     if (topicId.isEmpty || userId.isEmpty) {
       throw Exception("TopicId atau UserId tidak boleh kosong");
     }
@@ -79,18 +86,15 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
       "user_id": userId,
       "persona": widget.personaName,
       "topic_id": topicId,
+      "username": username,
     };
 
     debugPrint("🚀 Sending to /chat/: $body");
-   final response = await ApiService.postJson(url, body);
+    final response = await ApiService.postJson(url, body);
     final reply = response["response"] ?? "エラーが発生しました。";
-    final voiceId = response["voice_id"]; 
+    final voiceId = response["voice_id"];
 
-    return {
-      "text": reply,
-      "voice_id": voiceId,
-    };
-
+    return {"text": reply, "voice_id": voiceId};
   }
 
   Color _getLevelColor(String level) {
@@ -174,10 +178,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                         const SizedBox(height: 1),
                         const Text(
                           "Choose a topic to practice",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -209,22 +210,32 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                         child: TopicCard(
                           jpTitle: topic["jp_title"] ?? "タイトルなし",
                           enTitle: topic["en_title"] ?? "No Title",
-                          description:
-                              topic["description"] ?? "No description",
+                          description: topic["description"] ?? "No description",
                           level: topic["level"] ?? "Easy",
-                          levelColor:
-                              _getLevelColor(topic["level"] ?? "Easy"),
+                          levelColor: _getLevelColor(topic["level"] ?? "Easy"),
                           onTap: () async {
                             if (!mounted) return;
                             debugPrint(
-                                "🟢 Start conversation tapped for topic ${topic["en_title"]}");
+                              "🟢 Start conversation tapped for topic ${topic["en_title"]}",
+                            );
                             final userId = _userId;
+                            final username = _username;
                             if (userId == null || userId.isEmpty) {
-                              rootScaffoldMessengerKey.currentState
-                                  ?.showSnackBar(
+                              rootScaffoldMessengerKey.currentState?.showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      "User ID tidak ditemukan. Silakan login kembali."),
+                                    "User ID tidak ditemukan. Silakan login kembali.",
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            if (username == null || username.isEmpty) {
+                              rootScaffoldMessengerKey.currentState?.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Username tidak ditemukan. Silakan login kembali.",
+                                  ),
                                 ),
                               );
                               return;
@@ -236,6 +247,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               final firstMessage = await _fetchFirstMessage(
                                 topic["topic_id"]?.toString() ?? "",
                                 userId,
+                                username,
                               );
 
                               debugPrint("✅ First message: $firstMessage");
@@ -263,17 +275,20 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                                 );
                               } else {
                                 debugPrint(
-                                    "⚠️ globalContext is null, cannot navigate");
+                                  "⚠️ globalContext is null, cannot navigate",
+                                );
                               }
                             } catch (e) {
                               if (mounted) {
                                 setState(() => _isLoading = false);
                                 rootScaffoldMessengerKey.currentState
                                     ?.showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          "Gagal memuat percakapan: $e")),
-                                );
+                                      SnackBar(
+                                        content: Text(
+                                          "Gagal memuat percakapan: $e",
+                                        ),
+                                      ),
+                                    );
                               }
                             }
                           },
@@ -289,9 +304,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.25),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ),
       ],
