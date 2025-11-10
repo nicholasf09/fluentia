@@ -2,7 +2,7 @@
 import '../widgets/persona_card.dart';
 import '../services/api_service.dart';
 import './topic_selection_page.dart';
-import './settings_page.dart';
+import './auth_page.dart';
 import './feedback_history_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -96,6 +96,15 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       debugPrint("Error getUserProfile: $e");
     }
+  }
+
+  Future<void> _handleSignOut() async {
+    await ApiService.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthPage()),
+      (route) => false,
+    );
   }
 
   @override
@@ -302,12 +311,20 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black),
-            tooltip: 'Settings',
-            onPressed: () {
-              _fadeSlideNavigate(context, const SettingsPage());
-            },
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black87,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text(
+              "Sign out",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            onPressed: _handleSignOut,
           ),
         ],
       ),

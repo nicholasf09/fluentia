@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import './feedback_detail_page.dart';
-import './settings_page.dart'; // pastikan file ini ada
 
 class FeedbackHistoryPage extends StatefulWidget {
   final int userId;
@@ -92,17 +91,6 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
             ),
           ),
 
-          // Tombol Settings
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black),
-            tooltip: 'Settings',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
-            },
-          ),
         ],
       ),
     );
