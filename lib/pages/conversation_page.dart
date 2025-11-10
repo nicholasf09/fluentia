@@ -31,6 +31,7 @@ class ConversationPage extends StatefulWidget {
 class _ConversationPageState extends State<ConversationPage> {
   late List<Map<String, dynamic>> _messages;
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
   bool _isRecording = false;
   bool _isSending = false;
@@ -49,6 +50,18 @@ class _ConversationPageState extends State<ConversationPage> {
         "isUser": false
       },
     ];
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   String _getInitials(String name) {
@@ -68,6 +81,7 @@ class _ConversationPageState extends State<ConversationPage> {
       _isTyping = false;
       _isSending = true;
     });
+    _scrollToBottom();
 
     try {
       final url = Uri.parse("${ApiService.baseUrl}/chat/");
@@ -97,11 +111,13 @@ class _ConversationPageState extends State<ConversationPage> {
       setState(() {
         _messages.add({"text": reply, "isUser": false});
       });
+      _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _messages.add({"text": "⚠️ Error: $e", "isUser": false});
       });
+      _scrollToBottom();
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -112,6 +128,7 @@ class _ConversationPageState extends State<ConversationPage> {
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -256,6 +273,7 @@ class _ConversationPageState extends State<ConversationPage> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               clipBehavior: Clip.none,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
