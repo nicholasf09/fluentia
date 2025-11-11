@@ -183,13 +183,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings, color: Colors.black),
-                    onPressed: () {
-                      _safeShowSnackBar("Settings tapped");
-                    },
-                    tooltip: 'Settings',
-                  ),
                 ],
               ),
             ),

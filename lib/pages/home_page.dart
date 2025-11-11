@@ -311,21 +311,21 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          TextButton.icon(
+          TextButton(
             style: TextButton.styleFrom(
-              foregroundColor: Colors.black87,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.all(8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text(
-              "Sign out",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
             onPressed: _handleSignOut,
-          ),
+            child: const Icon(
+              Icons.logout_rounded,
+              size: 28, // ukuran diperbesar
+              weight: 800, // membuat ikon lebih tebal (Flutter 3.10+)
+            ),
+          )
         ],
       ),
     );

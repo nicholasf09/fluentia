@@ -31,7 +31,7 @@ class _ChatBubbleState extends State<ChatBubble> {
   final AudioPlayer _player = AudioPlayer();
 
   // 🌐 Ganti dengan URL backend-mu
-  static const String baseUrl = "http://localhost:8000";
+  static const String baseUrl = "https://u1083-nicholas-backend.gpu3.petra.ac.id";
 
   // === 🎧 Fungsi untuk memutar suara dari backend ===
   Future<void> _playTTS() async {

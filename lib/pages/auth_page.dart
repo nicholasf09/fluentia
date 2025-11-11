@@ -21,72 +21,78 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
+    final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // 🔵 Gradient background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF4F8FFD), Color(0xFFA9D6FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF76C7FD), Color(0xFF4F8FFD)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          // 🔹 White card
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: size.height * 0.75,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 20,
-                    offset: Offset(0, -2),
-                  )
-                ],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 32),
+              const Text(
+                "Fluentia",
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
               ),
-              child: _buildForm(context),
-            ),
-          ),
-          // 🔹 Logo & title
-          Positioned(
-            top: size.height * 0.12,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: const [
-                Text(
-                  "Fluentia",
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(height: 6),
+              const Text(
+                "Learn Japanese through conversation",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    letterSpacing: 1.2,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 20,
+                        offset: Offset(0, -2),
+                      )
+                    ],
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.only(
+                          bottom: bottomInset > 0 ? bottomInset + 16 : 16,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: _buildForm(context),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                SizedBox(height: 6),
-                Text(
-                  "Learn Japanese through conversation",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -94,7 +100,8 @@ class _AuthPageState extends State<AuthPage> {
   Widget _buildForm(BuildContext context) {
     return Form(
       key: _formKey,
-      child: ListView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 10),
           Text(
@@ -139,8 +146,7 @@ class _AuthPageState extends State<AuthPage> {
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
-            validator: (v) =>
-                v!.length < 6 ? "Minimal 6 karakter" : null,
+            validator: (v) => v!.length < 6 ? "Minimal 6 karakter" : null,
           ),
           const SizedBox(height: 28),
 
@@ -164,6 +170,7 @@ class _AuthPageState extends State<AuthPage> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
             ),
