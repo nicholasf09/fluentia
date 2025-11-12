@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import './conversation_page.dart';
 import '../widgets/topic_card.dart';
+import '../widgets/premium_loader.dart';
 
 // ✅ Global key untuk menampilkan snackbar dari mana pun tanpa error context
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
@@ -22,7 +23,8 @@ class TopicSelectionPage extends StatefulWidget {
 }
 
 class _TopicSelectionPageState extends State<TopicSelectionPage> {
-  bool _isLoading = false;
+  bool _isTopicsLoading = true;
+  bool _isActionLoading = false;
   List<dynamic> _topics = [];
   String? _userId;
   String? _username;
@@ -43,7 +45,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
 
   /// === Ambil daftar topik dari API berdasarkan persona ===
   Future<void> _fetchTopics() async {
-    setState(() => _isLoading = true);
+    setState(() => _isTopicsLoading = true);
     try {
       final topics = await ApiService.getTopicsByPersona(widget.personaName);
       if (!mounted) return;
@@ -51,7 +53,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
     } catch (e) {
       _safeShowSnackBar("Gagal memuat topik: $e");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isTopicsLoading = false);
     }
   }
 
@@ -189,8 +191,14 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
           ),
 
           /// === BODY ===
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+          body: _isTopicsLoading
+              ? Center(
+                  child: PremiumLoader(
+                    title: "Loading topics",
+                    subtitle:
+                        "Curating prompts with ${widget.personaName} for you...",
+                  ),
+                )
               : Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ListView.builder(
@@ -207,6 +215,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                           level: topic["level"] ?? "Easy",
                           levelColor: _getLevelColor(topic["level"] ?? "Easy"),
                           onTap: () async {
+                            if (_isActionLoading) return;
                             if (!mounted) return;
                             debugPrint(
                               "🟢 Start conversation tapped for topic ${topic["en_title"]}",
@@ -237,7 +246,7 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               return;
                             }
 
-                            setState(() => _isLoading = true);
+                            setState(() => _isActionLoading = true);
 
                             try {
                               final firstMessage = await _fetchFirstMessage(
@@ -249,9 +258,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               debugPrint(
                                 "✅ First message for topic_id ${topic["topic_id"]}: $firstMessage",
                               );
-
-                              if (!mounted) return;
-                              setState(() => _isLoading = false);
 
                               final globalContext =
                                   rootScaffoldMessengerKey.currentContext;
@@ -280,7 +286,6 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                               }
                             } catch (e) {
                               if (mounted) {
-                                setState(() => _isLoading = false);
                                 rootScaffoldMessengerKey.currentState
                                     ?.showSnackBar(
                                       SnackBar(
@@ -289,6 +294,10 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                                         ),
                                       ),
                                     );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isActionLoading = false);
                               }
                             }
                           },
@@ -300,11 +309,16 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
         ),
 
         /// === LOADING OVERLAY ===
-        if (_isLoading)
+        if (_isActionLoading)
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.25),
-              child: const Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: PremiumLoader(
+                  title: "Preparing your conversation",
+                  subtitle: "Connecting with ${widget.personaName}...",
+                ),
+              ),
             ),
           ),
       ],

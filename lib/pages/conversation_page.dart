@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../widgets/chat_bubble.dart';
 import '../services/api_service.dart';
 import './feedback_page.dart';
+import '../widgets/premium_loader.dart';
 
 class ConversationPage extends StatefulWidget {
   final String personaName;
@@ -35,6 +36,7 @@ class _ConversationPageState extends State<ConversationPage> {
   bool _isTyping = false;
   bool _isRecording = false;
   bool _isSending = false;
+  bool _isFeedbackLoading = false;
 
   @override
   void initState() {
@@ -137,7 +139,7 @@ class _ConversationPageState extends State<ConversationPage> {
     final avatarPath = widget.imagePath;
     final personaName = widget.personaName;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(90),
         child: SafeArea(
@@ -206,11 +208,15 @@ class _ConversationPageState extends State<ConversationPage> {
 
                 // 🔹 Tombol Feedback dengan transisi animasi
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    if (_isFeedbackLoading) return;
+                    setState(() => _isFeedbackLoading = true);
+                    await Future.delayed(const Duration(milliseconds: 300));
+                    if (!mounted) return;
                     debugPrint(
                       "🧾 Opening FeedbackPage with topic_id=${widget.topicId}",
                     );
-                    Navigator.of(context).push(
+                    final routeFuture = Navigator.of(context).push(
                       PageRouteBuilder(
                         transitionDuration: const Duration(milliseconds: 450),
                         pageBuilder:
@@ -248,6 +254,12 @@ class _ConversationPageState extends State<ConversationPage> {
                         },
                       ),
                     );
+
+                    routeFuture.whenComplete(() {
+                      if (mounted) {
+                        setState(() => _isFeedbackLoading = false);
+                      }
+                    });
                   },
                   child: Container(
                     width: 40,
@@ -405,6 +417,24 @@ class _ConversationPageState extends State<ConversationPage> {
           ),
         ],
       ),
+    );
+
+    return Stack(
+      children: [
+        scaffold,
+        if (_isFeedbackLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.25),
+              child: const Center(
+                child: PremiumLoader(
+                  title: "Preparing your feedback review",
+                  subtitle: "Gathering conversation insights...",
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

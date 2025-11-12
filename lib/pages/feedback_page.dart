@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart';
 import './home_page.dart';
+import '../widgets/premium_loader.dart';
 
 class FeedbackPage extends StatefulWidget {
   final String userId;
@@ -177,7 +178,12 @@ class _FeedbackPageState extends State<FeedbackPage> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: PremiumLoader(
+                title: "Analyzing your conversation",
+                subtitle: "LLM is preparing a personalized feedback summary...",
+              ),
+            )
           : error != null
               ? Center(
                   child: Text(error!,
