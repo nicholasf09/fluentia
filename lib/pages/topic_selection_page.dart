@@ -211,6 +211,9 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                             debugPrint(
                               "🟢 Start conversation tapped for topic ${topic["en_title"]}",
                             );
+                            debugPrint(
+                              "🔍 topic_id selected: ${topic["topic_id"]}",
+                            );
                             final userId = _userId;
                             final username = _username;
                             if (userId == null || userId.isEmpty) {
@@ -243,7 +246,9 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                                 username,
                               );
 
-                              debugPrint("✅ First message: $firstMessage");
+                              debugPrint(
+                                "✅ First message for topic_id ${topic["topic_id"]}: $firstMessage",
+                              );
 
                               if (!mounted) return;
                               setState(() => _isLoading = false);
@@ -252,7 +257,9 @@ class _TopicSelectionPageState extends State<TopicSelectionPage> {
                                   rootScaffoldMessengerKey.currentContext;
 
                               if (globalContext != null) {
-                                debugPrint("🚀 Navigating with fade...");
+                                debugPrint(
+                                  "🚀 Navigating to ConversationPage with topic_id ${topic["topic_id"]}",
+                                );
                                 await _fadeNavigate(
                                   globalContext,
                                   ConversationPage(

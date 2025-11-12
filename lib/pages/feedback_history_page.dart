@@ -133,6 +133,10 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
                                       item['created_at'] ??
                                           DateTime.now().toString()) ??
                                   DateTime.now();
+                              final avatarPath = _resolveAvatarPath(item);
+                              debugPrint(
+                                "🖼️ Feedback history item ${item['feedback_id']} avatarPath: $avatarPath",
+                              );
 
                               return GestureDetector(
                                 onTap: () {
@@ -143,7 +147,7 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
                                       feedbackId: item['feedback_id'].toString(),
                                       personaName: personaName,
                                       topicName: topic,
-                                      avatarPath: "assets/images/boss.png", // atau item['persona_image']
+                                      avatarPath: avatarPath,
                                     ),
                                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                       // Slide + Fade dari kanan
@@ -172,7 +176,7 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
                                   ));
                                 },
                                 child: _buildFeedbackCard(
-                                    personaName, topic, score, date),
+                                    personaName, topic, score, date, avatarPath),
                               );
                             },
                           ),
@@ -184,7 +188,7 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
 
   // ---------- Widget Card ----------
   Widget _buildFeedbackCard(
-      String persona, String topic, double score, DateTime date) {
+      String persona, String topic, double score, DateTime date, String avatarPath) {
     final percent = (score / 10).clamp(0.0, 1.0);
 
     return Container(
@@ -208,8 +212,8 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
             // Avatar (sementara default)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                "assets/images/boss.png",
+              child: Image(
+                image: _buildAvatarProvider(avatarPath),
                 width: 55,
                 height: 55,
                 fit: BoxFit.cover,
@@ -295,6 +299,41 @@ class _FeedbackHistoryPageState extends State<FeedbackHistoryPage> {
         ),
       ),
     );
+  }
+
+  String _resolveAvatarPath(dynamic item) {
+    if (item is Map<String, dynamic>) {
+      for (final key in [
+        'persona_image_path',
+        'persona_image',
+        'avatar_path',
+        'image_path'
+      ]) {
+        final value = item[key];
+        if (value is String && value.isNotEmpty) {
+          return _normalizeAvatarPath(value);
+        }
+      }
+    }
+    return 'assets/images/boss.png';
+  }
+
+  String _normalizeAvatarPath(String raw) {
+    var path = raw.trim();
+    if (path.isEmpty) return 'assets/images/boss.png';
+    if (path.startsWith('http')) return path;
+    path = path.replaceFirst(RegExp(r'^/+'), '');
+    if (!path.startsWith('assets/')) {
+      path = 'assets/images/$path';
+    }
+    return path;
+  }
+
+  ImageProvider _buildAvatarProvider(String path) {
+    if (path.startsWith('http')) {
+      return NetworkImage(path);
+    }
+    return AssetImage(path);
   }
 
   String _formatDate(DateTime date) {

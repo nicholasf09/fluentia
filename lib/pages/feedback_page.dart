@@ -48,6 +48,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
     });
 
     try {
+      debugPrint(
+        "🧾 Generating feedback for user=${widget.userId} topicId=${widget.topicId}",
+      );
       final result = await ApiService.generateFeedback(
         userId: widget.userId,
         topicId: widget.topicId ?? "1",

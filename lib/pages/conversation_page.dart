@@ -207,6 +207,9 @@ class _ConversationPageState extends State<ConversationPage> {
                 // 🔹 Tombol Feedback dengan transisi animasi
                 GestureDetector(
                   onTap: () {
+                    debugPrint(
+                      "🧾 Opening FeedbackPage with topic_id=${widget.topicId}",
+                    );
                     Navigator.of(context).push(
                       PageRouteBuilder(
                         transitionDuration: const Duration(milliseconds: 450),
@@ -214,7 +217,9 @@ class _ConversationPageState extends State<ConversationPage> {
                             (context, animation, secondaryAnimation) =>
                                 FeedbackPage(
                           userId: widget.userId,
+                          persona: widget.personaName,
                           topic: widget.topic,
+                          topicId: widget.topicId,
                           avatarPath: avatarPath,
                           personaName: personaName,
                         ),

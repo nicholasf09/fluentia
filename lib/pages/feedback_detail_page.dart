@@ -92,7 +92,10 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
   // ====================================================
   @override
   Widget build(BuildContext context) {
-    final avatarPath = widget.avatarPath ?? "assets/images/boss.png";
+    final avatarImage = _avatarProvider(widget.avatarPath);
+    debugPrint(
+      "🖼️ Feedback detail for ${widget.feedbackId}: avatarPath=${widget.avatarPath}",
+    );
     final personaName = widget.personaName ?? "Persona";
     final topic = widget.topicName ?? "-";
 
@@ -123,8 +126,8 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    avatarPath,
+                  child: Image(
+                    image: avatarImage,
                     width: 55,
                     height: 55,
                     fit: BoxFit.cover,
@@ -388,5 +391,26 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
         ],
       ),
     );
+  }
+
+  ImageProvider _avatarProvider(String? path) {
+    final normalized = _normalizeAvatarPath(path);
+    if (normalized.startsWith('http')) {
+      return NetworkImage(normalized);
+    }
+    return AssetImage(normalized);
+  }
+
+  String _normalizeAvatarPath(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return 'assets/images/boss.png';
+    }
+    var path = raw.trim();
+    if (path.startsWith('http')) return path;
+    path = path.replaceFirst(RegExp(r'^/+'), '');
+    if (!path.startsWith('assets/')) {
+      path = 'assets/images/$path';
+    }
+    return path;
   }
 }
