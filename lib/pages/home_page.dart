@@ -196,17 +196,16 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 130, vertical: 14),
+                        width: double.infinity, 
+                        padding: const EdgeInsets.symmetric(vertical: 14), 
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center, 
                           children: const [
-                            Icon(Icons.history_rounded,
-                                color: Color(0xFF4F8FFD), size: 22),
+                            Icon(Icons.history_rounded, color: Color(0xFF4F8FFD), size: 22),
                             SizedBox(width: 10),
                             Text(
                               "View Feedback History",

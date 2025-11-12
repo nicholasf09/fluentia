@@ -20,6 +20,19 @@ class PersonaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double textScale = screenWidth < 330
+        ? 0.8
+        : screenWidth < 380
+            ? 0.9
+            : screenWidth < 440
+                ? 0.95
+                : 1.0;
+    double scaled(double baseSize) => baseSize * textScale;
+    final double imageSize = screenWidth < 360 ? 62 : 70;
+    final double horizontalSpacing = screenWidth < 360 ? 10 : 14;
+    final EdgeInsets descriptionPadding =
+        EdgeInsets.only(right: screenWidth < 360 ? 10 : 30);
 
     return GestureDetector(
       onTap: onTap,
@@ -45,13 +58,13 @@ class PersonaCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 imagePath,
-                width: 70,
-                height: 70,
+                width: imageSize,
+                height: imageSize,
                 fit: BoxFit.cover,
               ),
             ),
 
-            const SizedBox(width: 14),
+            SizedBox(width: horizontalSpacing),
 
             // === Informasi persona ===
             Expanded(
@@ -66,8 +79,8 @@ class PersonaCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           name,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: scaled(20),
                             color: Colors.black87,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -86,8 +99,8 @@ class PersonaCard extends StatelessWidget {
                         ),
                         child: Text(
                           role,
-                            style: const TextStyle(
-                              fontSize: 10,
+                            style: TextStyle(
+                              fontSize: scaled(10),
                               fontWeight: FontWeight.w300,
                               color: Color(0xFF4F8FFD),
                               letterSpacing: 0.1,
@@ -108,8 +121,8 @@ class PersonaCard extends StatelessWidget {
                         ),
                         child: Text(
                           levelFormality,
-                            style: const TextStyle(
-                              fontSize: 10,
+                            style: TextStyle(
+                              fontSize: scaled(10),
                               fontWeight: FontWeight.w300,
                               color: Color(0xFF4F8FFD),
                               letterSpacing: 0.1,
@@ -123,11 +136,11 @@ class PersonaCard extends StatelessWidget {
 
                   // === Deskripsi ===
                   Padding(
-                    padding: const EdgeInsets.only(right: 30),
+                    padding: descriptionPadding,
                     child: Text(
                       description,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: scaled(13),
                         color: Colors.black54,
                         height: 1.3,
                       ),
