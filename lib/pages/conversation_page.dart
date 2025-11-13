@@ -34,7 +34,6 @@ class _ConversationPageState extends State<ConversationPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
-  bool _isRecording = false;
   bool _isSending = false;
   bool _isFeedbackLoading = false;
 
@@ -347,7 +346,7 @@ class _ConversationPageState extends State<ConversationPage> {
                   ],
                 ),
 
-                // 🔹 Tombol kirim / mic
+                // 🔹 Tombol kirim
                 Positioned(
                   right: 0,
                   child: _isSending
@@ -373,41 +372,31 @@ class _ConversationPageState extends State<ConversationPage> {
                           ),
                         )
                       : GestureDetector(
-                          onTap: _isTyping
-                              ? _sendMessage
-                              : () {
-                                  setState(() => _isRecording = !_isRecording);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(_isRecording
-                                          ? "🎤 Recording..."
-                                          : "Recording stopped"),
-                                    ),
-                                  );
-                                },
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0x334F8FFD),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
+                          onTap: _isTyping ? _sendMessage : null,
+                          child: Opacity(
+                            opacity: _isTyping ? 1 : 0.4,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF4F8FFD), Color(0xFF76C7FD)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                              ],
-                            ),
-                            child: Icon(
-                              _isTyping
-                                  ? Icons.send
-                                  : (_isRecording ? Icons.mic : Icons.mic_none),
-                              color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0x334F8FFD),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.send,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
