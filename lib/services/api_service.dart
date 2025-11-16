@@ -636,4 +636,16 @@ class ApiService {
       return null;
     }
   }
+
+  static Future<Map<String, dynamic>> fetchActivityInfo(int userId) async {
+    final url = Uri.parse("$baseUrl/activity/info/$userId");
+
+    final res = await http.get(url);
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    } else {
+      throw Exception("Failed to fetch activity info");
+    }
+  }
 }

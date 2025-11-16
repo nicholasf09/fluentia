@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../widgets/persona_card.dart';
 import '../services/api_service.dart';
+import '../services/usage_tracker.dart';
 import './topic_selection_page.dart';
 import './auth_page.dart';
 import './feedback_history_page.dart';
@@ -15,13 +16,16 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<dynamic> personas = [];
   bool loading = true;
-  String? userId;
+  int? userId;
   String? userName;
 
+  final UsageTracker _activityTracker = UsageTracker();
 
-  // Dummy progress (nanti bisa ambil dari backend)
-  final int practiceMinutes = 15;
+  // Dummy progress + streak data (nanti bisa ambil dari backend)
+  int practiceMinutes = 0;
   final int targetMinutes = 30;
+  int streakDays = 0;
+  final int bestStreakDays = 14;
 
   @override
   void initState() {
@@ -30,15 +34,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeData() async {
-    await _loadUserId();
+    final id = await _loadUserId();
     await _loadCachedUsername();
     await _fetchPersonas();
     await _loadUserProfile();
+    await _fetchActivityInfo(id);
   }
 
-  Future<void> _loadUserId() async {
+  Future<int?> _loadUserId() async {
     final id = await ApiService.getUserId();
-    setState(() => userId = id);
+    final parsedId = id != null ? int.tryParse(id) : null;
+    if (!mounted) return parsedId;
+    setState(() => userId = parsedId);
+    return parsedId;
   }
 
   Future<void> _loadCachedUsername() async {
@@ -98,6 +106,24 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _fetchActivityInfo([int? providedId]) async {
+    final id = providedId ?? userId;
+    if (id == null) return;
+
+    try {
+      final data =
+          await _activityTracker.fetchActivityInfo(overrideUserId: id);
+      if (data == null || !mounted) return;
+
+      setState(() {
+        practiceMinutes = (data['today_minutes'] as num?)?.toInt() ?? 0;
+        streakDays = (data['streak'] as num?)?.toInt() ?? 0;
+      });
+    } catch (e) {
+      debugPrint("Error fetching activity info: $e");
+    }
+  }
+
   Future<void> _handleSignOut() async {
     await ApiService.logout();
     if (!mounted) return;
@@ -109,8 +135,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final double practiceProgress =
-        (practiceMinutes / targetMinutes).clamp(0.0, 1.0);
+    final double practiceProgress = targetMinutes == 0
+        ? 0
+        : (practiceMinutes / targetMinutes).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE9ECF2),
@@ -181,7 +208,7 @@ class _HomePageState extends State<HomePage> {
                   Center(
                     child: GestureDetector(
                       onTap: () async {
-                        final id = await ApiService.getUserId();
+                        final id = userId ?? await _loadUserId();
                         if (id == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -192,21 +219,36 @@ class _HomePageState extends State<HomePage> {
 
                         _fadeSlideNavigate(
                           context,
-                          FeedbackHistoryPage(userId: int.parse(id)),
+                          FeedbackHistoryPage(userId: id),
                         );
                       },
-                      child: Container(
-                        width: double.infinity, 
-                        padding: const EdgeInsets.symmetric(vertical: 14), 
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center, 
-                          children: const [
-                            Icon(Icons.history_rounded, color: Color(0xFF4F8FFD), size: 22),
-                            SizedBox(width: 10),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFDFEFF), Color(0xFFE6EEFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFFD5E3FF),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4F8FFD).withOpacity(0.15),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center, 
+                            children: const [
+                              Icon(Icons.history_rounded, color: Color(0xFF4F8FFD), size: 22),
+                              SizedBox(width: 10),
                             Text(
                               "View Feedback History",
                               style: TextStyle(
@@ -294,17 +336,17 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   "Fluentia",
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1B2541),
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
-                  "Practice speaking Japanese daily",
+                  "Practice speaking Japanese daily!",
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+                    fontSize: 13,
+                    color: Color(0xFF6B7693),
                   ),
                 ),
               ],
@@ -312,7 +354,7 @@ class _HomePageState extends State<HomePage> {
           ),
           TextButton(
             style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
+              foregroundColor: const Color(0xFF1B2541),
               padding: const EdgeInsets.all(8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -333,95 +375,169 @@ class _HomePageState extends State<HomePage> {
   // ======================================================
   // ≡ƒôè Progress Card
   // ======================================================
+
   Widget _buildProgressCard(double progress) {
-    final String greeting = "こんにちは、${userName ?? 'ゲスト'}さん！"; // ← Tambahkan greeting Jepang
+    final double safeProgress = progress.clamp(0.0, 1.0);
+    final bool goalCompleted = safeProgress >= 1.0;
+    final String rawName = (userName ?? '').trim();
+    final String displayName = rawName.isEmpty ? "ともだち" : rawName;
+    final String greeting = "$displayNameさん";
+    final String combinedGreeting = "こんにちは, $greeting";
 
     return Card(
-      elevation: 3,
-      color: Colors.white,
+      elevation: 0,
+      color: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFDFEFF), Color(0xFFE6EEFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4F8FFD).withOpacity(0.18),
+              blurRadius: 28,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ≡ƒæï Greeting Section
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(Icons.waving_hand_rounded,
-                    color: Color(0xFF4F8FFD), size: 28),
-                const SizedBox(width: 10),
-                Text(
-                  greeting, // ΓåÉ tampilkan sapaan
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF222B45),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4F8FFD).withOpacity(0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    color: Color(0xFF4F8FFD),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        combinedGreeting,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF1B2541),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        "Daily speaking progress",
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF566076),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFD5E3FF)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Streak",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6B7693),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "$streakDays 日",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF4F8FFD),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-
-            // === Progress Bar ===
-            Stack(
-              children: [
-                Container(
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: progress,
+            const SizedBox(height: 14),
+            Container(
+              height: 18,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD5E3FF)),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: safeProgress == 0 ? 0.001 : safeProgress,
                   child: Container(
-                    height: 14,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF76C7FD), Color(0xFF4F8FFD)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4F8FFD).withOpacity(0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-
             const SizedBox(height: 10),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("0m",
-                    style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Text("$targetMinutes m",
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.bar_chart_rounded,
-                  color: Color(0xFF4F8FFD),
-                  size: 24,
-                ),
-                const SizedBox(width: 8), // jarak kecil antara ikon dan teks
                 Text(
-                  "Daily Goals: $practiceMinutes / $targetMinutes minutes",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  "$practiceMinutes m",
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF8A93A8)),
+                ),
+                Text(
+                  "$targetMinutes m",
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF8A93A8)),
                 ),
               ],
             ),

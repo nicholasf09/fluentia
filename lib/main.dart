@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:fluentia/pages/home_page.dart';
 import 'package:fluentia/pages/auth_page.dart';
 import 'package:fluentia/services/api_service.dart';
+import 'package:fluentia/services/usage_tracker.dart';
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+
+late UsageTracker usageTracker;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // 🔧 pastikan SharedPreferences siap
@@ -29,7 +32,17 @@ class _FluentiaAppState extends State<FluentiaApp> {
   void initState() {
     super.initState();
     _checkLoginStatus();
+    usageTracker = UsageTracker();
+    WidgetsBinding.instance.addObserver(usageTracker);
+    usageTracker.startSession();
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(usageTracker);
+    super.dispose();
+  }
+
 
   void changeTheme(ThemeMode mode) {
     setState(() => _themeMode = mode);

@@ -21,15 +21,23 @@ class TopicCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFDFEFF), Color(0xFFE6EEFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFD5E3FF),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(2, 4),
+            color: const Color(0xFF4F8FFD).withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -40,10 +48,15 @@ class TopicCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                jpTitle,
-                style: const TextStyle(
-                  fontSize: 20,
+              Expanded(
+                child: Text(
+                  jpTitle,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1B2541),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
@@ -63,7 +76,7 @@ class TopicCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // English title
           Text(
@@ -71,17 +84,18 @@ class TopicCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: Color(0xFF4F5B7A),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // Description
           Text(
             description,
             style: const TextStyle(
               fontSize: 13,
-              color: Colors.grey,
+              color: Color(0xFF6B7693),
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 12),

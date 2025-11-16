@@ -40,13 +40,21 @@ class PersonaCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFDFEFF), Color(0xFFE6EEFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFD5E3FF),
+            width: 0.8,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
+              color: const Color(0xFF4F8FFD).withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
