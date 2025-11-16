@@ -140,7 +140,7 @@ class PersonaCard extends StatelessWidget {
                     child: Text(
                       description,
                       style: TextStyle(
-                        fontSize: scaled(13),
+                        fontSize: scaled(12),
                         color: Colors.black54,
                         height: 1.3,
                       ),

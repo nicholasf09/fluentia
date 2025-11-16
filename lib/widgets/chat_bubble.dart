@@ -188,31 +188,33 @@ class _ChatBubbleState extends State<ChatBubble>
                           bottomRight: Radius.circular(widget.isUser ? 0 : 16),
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            safeText,
-                            style: const TextStyle(fontSize: 16),
-                            softWrap: true,
-                          ),
-                          if (_translation != null) ...[
-                            const SizedBox(height: 4),
-                            const Divider(
-                              color: Colors.black26,
-                              thickness: 0.5,
-                              height: 16,
-                            ),
+                      child: SelectionArea(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              _translation!,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black87,
-                              ),
+                              safeText,
+                              style: const TextStyle(fontSize: 16),
+                              softWrap: true,
                             ),
+                            if (_translation != null) ...[
+                              const SizedBox(height: 4),
+                              const Divider(
+                                color: Colors.black26,
+                                thickness: 0.5,
+                                height: 16,
+                              ),
+                              Text(
+                                _translation!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                     if (showAssistantActions)

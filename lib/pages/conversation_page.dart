@@ -29,17 +29,20 @@ class ConversationPage extends StatefulWidget {
   State<ConversationPage> createState() => _ConversationPageState();
 }
 
-class _ConversationPageState extends State<ConversationPage> {
+class _ConversationPageState extends State<ConversationPage>
+    with WidgetsBindingObserver {
   late List<Map<String, dynamic>> _messages;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
   bool _isSending = false;
   bool _isFeedbackLoading = false;
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     final cleanFirst = widget.firstMessage
         .replaceAll(RegExp(r"<think>.*?</think>", dotAll: true), "")
@@ -128,9 +131,23 @@ class _ConversationPageState extends State<ConversationPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return;
+    final bottomInset = views.first.viewInsets.bottom;
+    if (_lastKeyboardInset == bottomInset) return;
+    _lastKeyboardInset = bottomInset;
+    if (bottomInset > 0) {
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -330,7 +347,7 @@ class _ConversationPageState extends State<ConversationPage> {
                               child: TextField(
                                 controller: _controller,
                                 decoration: const InputDecoration(
-                                  hintText: "Type your message...",
+                                  hintText: "Ketik pesanmu...",
                                   border: InputBorder.none,
                                 ),
                                 onChanged: (v) =>
@@ -417,8 +434,8 @@ class _ConversationPageState extends State<ConversationPage> {
               color: Colors.black.withOpacity(0.25),
               child: const Center(
                 child: PremiumLoader(
-                  title: "Preparing your feedback review",
-                  subtitle: "Gathering conversation insights...",
+                  title: "Menyiapkan ringkasan umpan balikmu",
+                  subtitle: "Mengumpulkan wawasan dari percakapan...",
                 ),
               ),
             ),

@@ -105,7 +105,7 @@ class TopicCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Text(
-                    "Start Conversation",
+                    "Mulai Percakapan",
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   SizedBox(width: 8),
