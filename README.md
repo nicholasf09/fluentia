@@ -1,16 +1,37 @@
-# fluentia
+# Fluentia
+Latihan percakapan bahasa Jepang setiap hari dengan AI Persona. Merupakan aplikasi pembelajaran bahasa Jepang berbasis percakapan yang menggunakan LLM (Qwen3, Calm3) untuk menghadirkan dialog yang natural, personal, dan interaktif.
 
-A new Flutter project.
+## ✨ Fitur Utama
+### 🗣 AI Persona Conversation
 
-## Getting Started
+Latihan percakapan dengan persona seperti:
 
-This project is a starting point for a Flutter application.
+- Tanaka-san (manajer — formal)
+- Suzuki-san (pegawai konbini)
+- Akira-kun (teman santai)
+- Miyuki-san (klien)
 
-A few resources to get you started if this is your first Flutter project:
+### 🔍 AI Feedback
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Setiap percakapan dievaluasi:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Grammar
+- Kosakata
+- Tingkat keformalan
+- Saran perbaikan
+- Skor keseluruhan
+
+### ⏱ Usage Tracking
+
+- Hitung menit penggunaan harian
+- Tracking otomatis via lifecycle Flutter
+
+### 🔥 Daily Streak
+
+- Hitung hari beruntun belajar
+- Format Jepang: 〇日
+- Memotivasi konsistensi
+
+### 🎧 Audio Support
+
+- Voicevox TTS

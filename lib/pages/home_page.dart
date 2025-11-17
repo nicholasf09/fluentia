@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   int? userId;
   String? userName;
 
-  final UsageTracker _activityTracker = UsageTracker();
+  final UsageTracker _activityTracker = UsageTracker.instance;
 
   // Dummy progress + streak data (nanti bisa ambil dari backend)
   int practiceMinutes = 0;
@@ -35,6 +35,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initializeData() async {
     final id = await _loadUserId();
+    await _activityTracker.ensureDailyLoginPing(overrideUserId: id);
     await _loadCachedUsername();
     await _fetchPersonas();
     await _loadUserProfile();

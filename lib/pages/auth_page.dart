@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart'; // opsional, untuk integrasi login
+import '../services/usage_tracker.dart';
 import './home_page.dart'; // ganti sesuai rute utama aplikasi
 
 class AuthPage extends StatefulWidget {
@@ -246,7 +247,11 @@ class _AuthPageState extends State<AuthPage> {
 
       if (result["success"] == true) {
         // ✅ Simpan user ID dan token (sudah ditangani di ApiService)
-        final userId = await ApiService.getUserId();
+        final storedUserId = await ApiService.getUserId();
+        final parsedUserId =
+            storedUserId != null ? int.tryParse(storedUserId) : null;
+        final tracker = UsageTracker.instance;
+        await tracker.ensureDailyLoginPing(overrideUserId: parsedUserId);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(isLogin ? "Login berhasil!" : "Registrasi sukses!")),

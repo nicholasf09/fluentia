@@ -7,7 +7,7 @@ import 'package:fluentia/services/usage_tracker.dart';
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-late UsageTracker usageTracker;
+final UsageTracker usageTracker = UsageTracker.instance;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // 🔧 pastikan SharedPreferences siap
@@ -32,14 +32,12 @@ class _FluentiaAppState extends State<FluentiaApp> {
   void initState() {
     super.initState();
     _checkLoginStatus();
-    usageTracker = UsageTracker();
-    WidgetsBinding.instance.addObserver(usageTracker);
-    usageTracker.startSession();
+    usageTracker.initialize();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(usageTracker);
+    usageTracker.dispose();
     super.dispose();
   }
 
