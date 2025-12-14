@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/api_service.dart'; // opsional, untuk integrasi login
 import '../services/usage_tracker.dart';
 import './home_page.dart'; // ganti sesuai rute utama aplikasi
@@ -106,7 +106,7 @@ class _AuthPageState extends State<AuthPage> {
         children: [
           const SizedBox(height: 10),
           Text(
-            isLogin ? "Masuk ke Akunmu" : "Buat Akun Baru",
+            isLogin ? "Sign In" : "Create New Account",
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,

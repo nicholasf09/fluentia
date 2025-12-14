@@ -52,6 +52,7 @@ class _ChatBubbleState extends State<ChatBubble>
   @override
   void dispose() {
     _translateRotationController.dispose();
+    _player.dispose();
     super.dispose();
   }
 
@@ -62,17 +63,22 @@ class _ChatBubbleState extends State<ChatBubble>
   setState(() => _isPlaying = true);
 
   try {
-    final bytes = await ApiService.generateTTS(widget.text, speaker: widget.voiceId ?? 1);
+    final bytes = await ApiService.generateTTS(
+      widget.text,
+      speaker: widget.voiceId ?? 1,
+    );
     if (bytes != null) {
       await _player.play(BytesSource(bytes));
     } else {
-      _showSnack("⚠️ Gagal memutar suara (null bytes)");
+      _showSnack("ƒsÿ‹,? Gagal memutar suara (null bytes)");
     }
   } catch (e) {
-    _showSnack("⚠️ Error: $e");
+    _showSnack("ƒsÿ‹,? Error: $e");
+  } finally {
+    if (mounted) {
+      setState(() => _isPlaying = false);
+    }
   }
-
-  setState(() => _isPlaying = false);
 }
 
 
@@ -225,22 +231,48 @@ class _ChatBubbleState extends State<ChatBubble>
                   Positioned(
                     bottom: 0,
                     right: 12,
-                    child: _buildMiniCircleButton(
-                      onTap: _isLoadingTranslate ? null : _translateText,
-                      size: _translateButtonSize,
-                      child: _isLoadingTranslate
-                          ? AnimatedBuilder(
-                              animation: _translateRotationController,
-                              child: const Icon(Icons.autorenew,
+                    child: Row(
+                      children: [
+                        _buildMiniCircleButton(
+                          onTap: _isLoadingTranslate ? null : _translateText,
+                          size: _translateButtonSize,
+                          child: _isLoadingTranslate
+                              ? AnimatedBuilder(
+                                  animation: _translateRotationController,
+                                  child: const Icon(Icons.autorenew,
+                                      size: 18, color: Colors.black87),
+                                  builder: (_, child) => Transform.rotate(
+                                    angle: _translateRotationController.value *
+                                        2 *
+                                        math.pi,
+                                    child: child,
+                                  ),
+                                )
+                              : const Icon(Icons.translate,
                                   size: 18, color: Colors.black87),
-                              builder: (_, child) => Transform.rotate(
-                                angle:
-                                    _translateRotationController.value * 2 * math.pi,
-                                child: child,
-                              ),
-                            )
-                          : const Icon(Icons.translate,
-                              size: 18, color: Colors.black87),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMiniCircleButton(
+                          onTap: _isPlaying ? null : _playTTS,
+                          size: _translateButtonSize,
+                          child: _isPlaying
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black87,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.volume_up_rounded,
+                                  size: 18,
+                                  color: Colors.black87,
+                                ),
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -285,7 +317,7 @@ class _ChatBubbleState extends State<ChatBubble>
               ),
             ],
           ),
-          child: effectiveChild,
+          child: Center(child: effectiveChild),
         ),
       ),
     );

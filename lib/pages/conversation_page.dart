@@ -51,7 +51,8 @@ class _ConversationPageState extends State<ConversationPage>
     _messages = [
       {
         "text": cleanFirst.isEmpty ? "（初回メッセージなし）" : cleanFirst,
-        "isUser": false
+        "isUser": false,
+        "voiceId": widget.voiceId,
       },
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -102,7 +103,7 @@ class _ConversationPageState extends State<ConversationPage>
       final response = await ApiService.postJson(url, body);
 
       String reply = (response["response"] ?? "").toString();
-      int voiceId = response["voice_id"];
+      final voiceId = response["voice_id"];
       
       print("🚀 Received reply: $reply (voiceId: $voiceId)");
       reply = reply
@@ -113,7 +114,11 @@ class _ConversationPageState extends State<ConversationPage>
 
       if (!mounted) return;
       setState(() {
-        _messages.add({"text": reply, "isUser": false});
+        _messages.add({
+          "text": reply,
+          "isUser": false,
+          "voiceId": voiceId,
+        });
       });
       _scrollToBottom();
     } catch (e) {
@@ -318,7 +323,7 @@ class _ConversationPageState extends State<ConversationPage>
                   text: safeText.isEmpty ? "（メッセージなし）" : safeText,
                   isUser: msg["isUser"] ?? false,
                   avatarPath: !(msg["isUser"] ?? false) ? avatarPath : null,
-                  voiceId: !(msg["isUser"] ?? false) ? widget.voiceId : null,
+                  voiceId: msg["voiceId"] as int?,
                 );
               },
             ),
